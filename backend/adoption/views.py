@@ -1,3 +1,11 @@
-from django.shortcuts import render
+from rest_framework import viewsets
 
-# Create your views here.
+from .models import AdoptionPost
+from .serializers import AdoptionPostSerializer
+
+
+class AdoptionPostViewSet(viewsets.ModelViewSet):
+
+    queryset = AdoptionPost.objects.all()
+
+    serializer_class = AdoptionPostSerializer
