@@ -19,9 +19,17 @@ from django.urls import path
 
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/cats/", include("cats.urls")),
+    path("api/users/", include("users.urls")),
+    path("api/matching/", include("matching.urls")),
+    path("api/chat/", include("chat.urls")),
+    path("api/appointments/", include("appointments.urls")),
+    path("api/adoption/", include("adoption.urls")),
+    path("api/reports/", include("reports.urls"))
 ]
 
 if settings.DEBUG:

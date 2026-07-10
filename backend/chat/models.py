@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from matching.models import Match
 # Create your models here.
+
+
 class Chat(models.Model):
 
     match = models.OneToOneField(
@@ -12,6 +14,9 @@ class Chat(models.Model):
     creado_en = models.DateTimeField(
         auto_now_add=True
     )
+
+    def __str__(self):
+        return f"Chat {self.id}"
 
 class Message(models.Model):
 
@@ -30,3 +35,7 @@ class Message(models.Model):
     fecha_envio = models.DateTimeField(
         auto_now_add=True
     )
+
+    def __str__(self):
+        return f"{self.remitente}: {self.contenido[:30]}"
+
