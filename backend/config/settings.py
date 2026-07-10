@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'appointments',
     'adoption',
     'reports',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [

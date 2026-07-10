@@ -26,3 +26,7 @@ class Appointment(models.Model):
         choices=ESTADOS,
         default="PENDIENTE"
     )
+
+
+def __str__(self):
+    return f"{self.ubicacion} - {self.fecha}"
