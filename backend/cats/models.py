@@ -75,6 +75,12 @@ class Vaccine(models.Model):
 
     fecha_vencimiento = models.DateField()
 
+    soporte = models.FileField(
+        upload_to="vaccines/",
+        blank=True,
+        null=True
+    )
+
     def __str__(self):
         return self.nombre
 
@@ -91,6 +97,12 @@ class MedicalRecord(models.Model):
 
     notas = models.TextField(
         blank=True
+    )
+
+    documento = models.FileField(
+        upload_to="medical_records/",
+        blank=True,
+        null=True
     )
 
     fecha_registro = models.DateTimeField(
