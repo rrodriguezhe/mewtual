@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - Inicio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { brandOrange: '#F59E0B', brandCrema: '#FEFBF6' } } } }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-24">
+        
+        <div class="mt-4 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Hola! 👋</h1>
+            <p class="text-gray-500 text-sm">Encuentra la pareja perfecta para tu gato</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            <div class="bg-white p-4 rounded-2xl shadow-sm text-center border border-gray-50">
+                <span class="text-xs text-gray-400 block mb-1">Gatos activos</span>
+                <span class="text-lg font-bold text-gray-700">1,234</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm text-center border border-gray-50">
+                <span class="text-xs text-gray-400 block mb-1">Matches hoy</span>
+                <span class="text-lg font-bold text-brandOrange">89</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm text-center border border-gray-50">
+                <span class="text-xs text-gray-400 block mb-1">Nuevos esta semana</span>
+                <span class="text-lg font-bold text-gray-700">156</span>
+            </div>
+        </div>
+
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Accesos rápidos</h2>
+        <div class="space-y-3">
+            <a href="{% url 'matching:swipe' %}" class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-gray-50 hover:bg-gray-50 transition">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm">Comienza a hacer match</h3>
+                    <p class="text-xs text-gray-400">Descubre gatos compatibles</p>
+                </div>
+                <span class="text-brandOrange font-bold">&rarr;</span>
+            </a>
+            <a href="{% url 'cats:mis_gatos' %}" class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-gray-50 hover:bg-gray-50 transition">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm">Ver mis gatos</h3>
+                    <p class="text-xs text-gray-400">Administra los perfiles</p>
+                </div>
+                <span class="text-brandOrange font-bold">&rarr;</span>
+            </a>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 flex justify-around items-center shadow-lg rounded-t-2xl">
+    <a href="{% url 'matching:home' %}" class="flex flex-col items-center text-brandOrange">
+        <span class="text-xs font-medium">Inicio</span>
+    </a>
+    <a href="{% url 'matching:swipe' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+        <span class="text-xs font-medium">Match</span>
+    </a>
+    <a href="{% url 'chat:lista_chats' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+        <span class="text-xs font-medium">Chats</span>
+    </a>
+    <a href="{% url 'cats:mis_gatos' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+        <span class="text-xs font-medium">Mis Gatos</span>
+    </a>
+</div>
+    </div>
+</body>
+</html>
