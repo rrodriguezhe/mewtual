@@ -1,75 +1,409 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mewtual - Editar Perfil</title>
+    <title>Mewtual - Editar {{ gato.nombre }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { brandOrange: '#F59E0B', brandCrema: '#FEFBF6', brandGreen: '#10B981' } } } }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#F59E0B',
+                        brandCrema: '#FEFBF6',
+                        brandGreen: '#10B981'
+                    }
+                }
+            }
+        }
     </script>
 </head>
 <body class="bg-gray-100 flex justify-center items-center min-h-screen">
-    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-24">
-        
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-10">
+
+        <!-- Encabezado -->
         <div class="flex items-center space-x-4 mb-6">
             <a href="{% url 'cats:mis_gatos' %}" class="text-gray-600 text-xl font-bold">&larr;</a>
             <h1 class="text-xl font-bold text-gray-800">Editar Perfil</h1>
         </div>
 
-        <div class="text-center mb-6 relative">
-            <div class="w-28 h-28 rounded-full bg-gray-300 mx-auto overflow-hidden border-4 border-white shadow-sm">
-                <img src="https://placekitten.com/200/200" alt="Gato" class="w-full h-full object-cover">
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-2 rounded-xl text-sm font-medium
+                {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-100
+                {% else %}bg-green-50 text-green-700 border border-green-100{% endif %}">
+                {{ message }}
             </div>
-            <button class="absolute bottom-0 right-[38%] bg-brandOrange p-2 rounded-full text-white shadow-md hover:scale-105 transition">
-                📸
-            </button>
-            <p class="text-xs text-gray-400 mt-2">Toca para cambiar foto</p>
+            {% endfor %}
         </div>
+        {% endif %}
 
-        <form action="" method="POST" class="space-y-4 overflow-y-auto max-h-[50vh] pr-1">
+        <!-- Errores no relacionados a campo -->
+        {% if form.non_field_errors %}
+        <div class="mb-4 px-4 py-2 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
             {% csrf_token %}
-            <div>
-                <label class="block text-gray-500 text-sm font-medium mb-1">Nombre</label>
-                <input type="text" value="Simba" class="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:outline-none focus:border-brandOrange bg-white shadow-sm">
+
+            <!-- ── Foto ── -->
+            <div class="text-center mb-2 relative">
+                <div class="w-28 h-28 rounded-full bg-gray-200 mx-auto overflow-hidden border-4 border-white shadow-sm">
+                    {% if gato.foto %}
+                    <img id="foto-preview" src="{{ gato.foto.url }}" alt="Foto de {{ gato.nombre }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <img id="foto-preview" src="" alt="" class="w-full h-full object-cover hidden">
+                    <div id="foto-placeholder" class="w-full h-full flex items-center justify-center text-4xl">🐱</div>
+                    {% endif %}
+                </div>
+                <label for="{{ form.foto.id_for_label }}"
+                       class="absolute bottom-0 right-[38%] bg-brandOrange p-2 rounded-full text-white shadow-md hover:scale-105 transition cursor-pointer"
+                       title="Cambiar foto">
+                    📸
+                </label>
+                <div class="hidden">{{ form.foto }}</div>
+                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB</p>
+                {% if form.foto.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.foto.errors.0 }}</p>
+                {% endif %}
             </div>
 
+            <!-- ── Nombre ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1">
+                    Nombre <span class="text-red-400">*</span>
+                </label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.nombre.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Fecha nacimiento + Peso ── -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-gray-500 text-sm font-medium mb-1">Edad</label>
-                    <input type="number" value="2" class="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:outline-none focus:border-brandOrange bg-white shadow-sm">
+                    <label class="block text-gray-500 text-sm font-medium mb-1">
+                        Nacimiento <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.fecha_nacimiento }}
+                    <p class="text-xs text-gray-400 mt-0.5">Edad actual: {{ edad }} año{{ edad|pluralize }}</p>
+                    {% if form.fecha_nacimiento.errors %}
+                    <p class="text-xs text-red-500 mt-1">{{ form.fecha_nacimiento.errors.0 }}</p>
+                    {% endif %}
                 </div>
                 <div>
-                    <label class="block text-gray-500 text-sm font-medium mb-1">Género</label>
-                    <div class="flex space-x-2">
-                        <button type="button" class="flex-1 py-2.5 rounded-xl bg-brandOrange text-white font-medium text-sm shadow-sm">Macho</button>
-                        <button type="button" class="flex-1 py-2.5 rounded-xl bg-white text-gray-500 border border-gray-100 text-sm font-medium">Hembra</button>
-                    </div>
+                    <label class="block text-gray-500 text-sm font-medium mb-1">Peso (kg)</label>
+                    {{ form.peso }}
+                    {% if form.peso.errors %}
+                    <p class="text-xs text-red-500 mt-1">{{ form.peso.errors.0 }}</p>
+                    {% endif %}
                 </div>
             </div>
 
+            <!-- ── Género ── -->
             <div>
-                <label class="block text-gray-500 text-sm font-medium mb-1">Raza</label>
-                <input type="text" value="Angora" class="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:outline-none focus:border-brandOrange bg-white shadow-sm">
+                <label class="block text-gray-500 text-sm font-medium mb-1">
+                    Género <span class="text-red-400">*</span>
+                </label>
+                <div class="flex space-x-2" id="sexo-group">
+                    {% for radio in form.sexo %}
+                    <label class="sexo-btn flex-1 cursor-pointer" data-value="{{ radio.data.value }}">
+                        {{ radio.tag }}
+                        <span class="py-2.5 rounded-xl font-medium text-sm text-center block
+                                     bg-white text-gray-500 border border-gray-100
+                                     hover:bg-orange-50 transition select-none">
+                            {{ radio.choice_label }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if form.sexo.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.sexo.errors.0 }}</p>
+                {% endif %}
             </div>
 
+            <!-- ── Raza ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1">
+                    Raza <span class="text-red-400">*</span>
+                </label>
+                {{ form.raza }}
+                {% if form.raza.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.raza.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Color ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1">Color de pelaje</label>
+                {{ form.color }}
+            </div>
+
+            <!-- ── Descripción ── -->
             <div>
                 <label class="block text-gray-500 text-sm font-medium mb-1">Descripción</label>
-                <textarea rows="3" class="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:outline-none focus:border-brandOrange bg-white shadow-sm">Gato muy juguetón y cariñoso.</textarea>
+                {{ form.gustos_preferencias }}
             </div>
 
-            <div class="flex items-center justify-between p-2 bg-white rounded-xl border border-gray-50 shadow-sm">
-                <span class="text-sm text-gray-600 font-medium flex items-center">
-                    <span class="w-2.5 h-2.5 bg-brandGreen rounded-full inline-block mr-2"></span> Vacunado
-                </span>
-                <input type="checkbox" checked class="w-5 h-5 accent-brandGreen">
+            <!-- ── Toggles ── -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-50 shadow-sm">
+                    <span class="text-sm text-gray-600 font-medium flex items-center">
+                        <span class="w-2.5 h-2.5 bg-brandGreen rounded-full inline-block mr-2"></span>
+                        Esterilizado
+                    </span>
+                    {{ form.esterilizado }}
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-50 shadow-sm">
+                    <span class="text-sm text-gray-600 font-medium flex items-center">
+                        <span class="mr-2">🐾</span>
+                        Modo cruce responsable
+                    </span>
+                    {{ form.modo_cruce_responsable }}
+                </div>
+                {% if form.modo_cruce_responsable.errors %}
+                <p class="text-xs text-red-500">{{ form.modo_cruce_responsable.errors.0 }}</p>
+                {% endif %}
             </div>
 
-            <button type="submit" class="w-full bg-brandOrange text-white font-semibold py-3 rounded-xl shadow-md hover:bg-opacity-90 transition mt-6">
+            <!-- ── Vacunas existentes ── -->
+            {% if vacunas %}
+            <div class="border-t border-gray-100 pt-4 mt-2">
+                <p class="text-sm font-semibold text-gray-600 mb-3">
+                    Vacunas registradas
+                    <span class="ml-1 text-xs font-normal text-gray-400">({{ vacunas|length }})</span>
+                </p>
+                <div class="space-y-2">
+                    {% for v in vacunas %}
+                    <div class="bg-white rounded-xl px-4 py-3 border border-gray-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">{{ v.nombre }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                Aplicada: {{ v.fecha_aplicacion|date:"d/m/Y" }} ·
+                                Vence: {{ v.fecha_vencimiento|date:"d/m/Y" }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if v.fecha_vencimiento >= today %}
+                            <span class="w-2 h-2 bg-brandGreen rounded-full" title="Vigente"></span>
+                            {% else %}
+                            <span class="w-2 h-2 bg-red-400 rounded-full" title="Vencida"></span>
+                            {% endif %}
+                            <a href="{% url 'cats:eliminar_vacuna' v.pk %}"
+                               class="text-xs text-red-400 hover:text-red-600 transition"
+                               onclick="return confirm('¿Eliminar esta vacuna?')"
+                               title="Eliminar vacuna">✕</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ── Agregar nueva vacuna ── -->
+            <div class="border-t border-gray-100 pt-4 mt-2">
+                <p class="text-sm font-semibold text-gray-600 mb-3">Agregar vacuna</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">Nombre de la vacuna</label>
+                        {{ vaccine_form.nombre }}
+                        {% if vaccine_form.nombre.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ vaccine_form.nombre.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-gray-500 text-xs font-medium mb-1">Fecha aplicación</label>
+                            {{ vaccine_form.fecha_aplicacion }}
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 text-xs font-medium mb-1">Fecha vencimiento</label>
+                            {{ vaccine_form.fecha_vencimiento }}
+                        </div>
+                    </div>
+                    {% if vaccine_form.non_field_errors %}
+                    <p class="text-xs text-red-500">{{ vaccine_form.non_field_errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Registros médicos existentes ── -->
+            {% if registros_medicos %}
+            <div class="border-t border-gray-100 pt-4 mt-2">
+                <p class="text-sm font-semibold text-gray-600 mb-3">
+                    Registros médicos
+                    <span class="ml-1 text-xs font-normal text-gray-400">({{ registros_medicos|length }})</span>
+                </p>
+                <div class="space-y-2">
+                    {% for r in registros_medicos %}
+                    <div class="bg-white rounded-xl px-4 py-3 border border-gray-100">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-800 truncate">{{ r.diagnostico_procedimiento }}</p>
+                                {% if r.notas %}
+                                <p class="text-xs text-gray-400 mt-0.5 truncate">{{ r.notas }}</p>
+                                {% endif %}
+                                <p class="text-xs text-gray-400 mt-0.5">{{ r.fecha_registro|date:"d/m/Y" }}</p>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                {% if r.documento %}
+                                <a href="{{ r.documento.url }}"
+                                   target="_blank"
+                                   class="text-xs text-brandOrange hover:underline font-medium"
+                                   title="Ver certificado">
+                                    📄 Ver
+                                </a>
+                                <span class="w-2 h-2 bg-brandGreen rounded-full" title="Con certificado adjunto"></span>
+                                {% else %}
+                                <span class="w-2 h-2 bg-gray-300 rounded-full" title="Sin certificado adjunto"></span>
+                                {% endif %}
+                                <a href="{% url 'cats:eliminar_registro_medico' r.pk %}"
+                                   class="text-xs text-red-400 hover:text-red-600 transition"
+                                   onclick="return confirm('¿Eliminar este registro médico?')"
+                                   title="Eliminar">✕</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ── Agregar certificado médico ── -->
+            <div class="border-t border-gray-100 pt-4 mt-2">
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-sm font-semibold text-gray-600">Agregar certificado médico</p>
+                    <span class="text-xs text-brandOrange font-medium bg-orange-50 px-2 py-0.5 rounded-full">🐾 Cruce responsable</span>
+                </div>
+
+                <!-- Estado actual de requisitos de cruce responsable -->
+                <div class="bg-white rounded-xl border border-gray-100 p-3 mb-3 space-y-1.5">
+                    <p class="text-xs font-medium text-gray-500 mb-1">Estado para cruce responsable:</p>
+                    <div class="flex items-center gap-2 text-xs">
+                        {% if cruce.vacuna_vigente %}
+                        <span class="w-2 h-2 bg-brandGreen rounded-full shrink-0"></span>
+                        <span class="text-green-600">Vacuna vigente</span>
+                        {% else %}
+                        <span class="w-2 h-2 bg-red-400 rounded-full shrink-0"></span>
+                        <span class="text-red-500">Sin vacuna vigente</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        {% if cruce.certificado_medico %}
+                        <span class="w-2 h-2 bg-brandGreen rounded-full shrink-0"></span>
+                        <span class="text-green-600">Certificado médico registrado</span>
+                        {% else %}
+                        <span class="w-2 h-2 bg-red-400 rounded-full shrink-0"></span>
+                        <span class="text-red-500">Sin certificado médico</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        {% if not gato.esterilizado %}
+                        <span class="w-2 h-2 bg-brandGreen rounded-full shrink-0"></span>
+                        <span class="text-green-600">No esterilizado</span>
+                        {% else %}
+                        <span class="w-2 h-2 bg-red-400 rounded-full shrink-0"></span>
+                        <span class="text-red-500">Gato esterilizado — cruce no permitido</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <p class="text-xs text-gray-400 mb-3">
+                    El certificado debe ser emitido por un veterinario. Solo los gatos con vacuna vigente
+                    y certificado médico pueden aparecer en el modo cruce responsable.
+                </p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">Diagnóstico o procedimiento</label>
+                        {{ medical_form.diagnostico_procedimiento }}
+                        {% if medical_form.diagnostico_procedimiento.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ medical_form.diagnostico_procedimiento.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">Notas adicionales</label>
+                        {{ medical_form.notas }}
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">
+                            Adjuntar certificado <span class="text-gray-400">(PDF o imagen)</span>
+                        </label>
+                        {{ medical_form.documento }}
+                        {% if medical_form.documento.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ medical_form.documento.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% if medical_form.non_field_errors %}
+                    <p class="text-xs text-red-500">{{ medical_form.non_field_errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Botón guardar ── -->
+            <button type="submit"
+                    class="w-full bg-brandOrange text-white font-semibold py-3 rounded-xl shadow-md hover:bg-opacity-90 transition mt-4">
                 Guardar cambios
             </button>
         </form>
 
+        <!-- Botón eliminar gato -->
+        <a href="{% url 'cats:eliminar_perfil' gato.pk %}"
+           class="w-full mt-3 block text-center text-red-400 text-sm font-medium hover:text-red-600 transition py-2">
+            Eliminar perfil de {{ gato.nombre }}
+        </a>
+
     </div>
+
+    <script>
+        // ── Vista previa de foto ──
+        const fotoInput = document.getElementById('{{ form.foto.id_for_label }}');
+        if (fotoInput) {
+            fotoInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('foto-preview');
+                    const placeholder = document.getElementById('foto-placeholder');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    if (placeholder) placeholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ── Selector de género tipo botón ──
+        function actualizarEstiloSexo() {
+            document.querySelectorAll('.sexo-btn').forEach(lbl => {
+                const input = lbl.querySelector('input[type=radio]');
+                const span  = lbl.querySelector('span');
+                if (!input || !span) return;
+                if (input.checked) {
+                    span.classList.add('bg-brandOrange', 'text-white', 'shadow-sm');
+                    span.classList.remove('bg-white', 'text-gray-500', 'border', 'border-gray-100', 'hover:bg-orange-50');
+                } else {
+                    span.classList.remove('bg-brandOrange', 'text-white', 'shadow-sm');
+                    span.classList.add('bg-white', 'text-gray-500', 'border', 'border-gray-100', 'hover:bg-orange-50');
+                }
+            });
+        }
+
+        // Ocultar los radios nativos y escuchar cambios
+        document.querySelectorAll('.sexo-btn input[type=radio]').forEach(input => {
+            input.classList.add('sr-only');
+            input.addEventListener('change', actualizarEstiloSexo);
+        });
+
+        // Aplicar estado inicial: el gato ya tiene un sexo guardado
+        // Django renderiza el input con checked="checked" automáticamente
+        actualizarEstiloSexo();
+    </script>
 </body>
 </html>
