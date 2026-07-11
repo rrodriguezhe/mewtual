@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - Iniciar Sesión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#F59E0B',
+                        brandCrema: '#FEFBF6',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen font-sans">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col justify-between p-8 relative">
+        
+        <div class="text-center mt-12">
+            <div class="bg-brandOrange w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-md mb-4">
+                <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Mewtual</h1>
+            <p class="text-gray-500 text-sm mt-2">Encuentra la pareja perfecta para tu gato</p>
+        </div>
+
+        <form action="" method="POST" class="space-y-4 my-auto">
+            {% csrf_token %}
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1">Correo electrónico</label>
+                <input type="email" placeholder="tu@email.com" class="w-full px-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:border-brandOrange bg-white shadow-sm transition">
+            </div>
+            <div>
+                <label class="block text-gray-600 text-sm font-medium mb-1">Contraseña</label>
+                <input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:border-brandOrange bg-white shadow-sm transition">
+            </div>
+            <div class="text-right">
+                <a href="#" class="text-xs text-gray-400 hover:underline">¿Olvidaste tu contraseña?</a>
+            </div>
+            
+            <button type="submit" class="w-full bg-brandOrange text-white font-semibold py-3.5 rounded-full shadow-md hover:bg-opacity-90 transition transform active:scale-95 mt-4 block text-center">
+                Iniciar sesión
+            </button>
+        </form>
+
+        <div class="text-center mb-8">
+            <p class="text-sm text-gray-500">
+                ¿No tienes cuenta? <a href="{% url 'users:register' %}" class="text-brandOrange font-semibold hover:underline">Crear cuenta</a>
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>
