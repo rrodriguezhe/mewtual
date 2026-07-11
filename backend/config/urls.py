@@ -15,21 +15,26 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
 
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("api/cats/", include("cats.urls")),
-    path("api/users/", include("users.urls")),
-    path("api/matching/", include("matching.urls")),
-    path("api/chat/", include("chat.urls")),
+    #path("api/cats/", include("cats.urls")),
+    #path("api/users/", include("users.urls")),
+    #path("api/matching/", include("matching.urls")),
+    #path("api/chat/", include("chat.urls")),
     path("api/appointments/", include("appointments.urls")),
     path("api/adoption/", include("adoption.urls")),
-    path("api/reports/", include("reports.urls"))
+    path("api/reports/", include("reports.urls")),
+    path('users/', include('users.urls')),
+    path('matching/', include('matching.urls')),
+    path('cats/', include('cats.urls')),
+    path('chat/', include('chat.urls')),
+    path('', lambda request: redirect('users:login', permanent=False)),
 ]
 
 if settings.DEBUG:

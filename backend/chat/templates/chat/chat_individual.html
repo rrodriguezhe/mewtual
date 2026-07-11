@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { brandOrange: '#F59E0B', brandCrema: '#FEFBF6', brandGreen: '#10B981' } } } }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col justify-between relative">
+        
+        <div class="bg-white border-b border-gray-100 p-4 flex items-center space-x-3 rounded-b-2xl shadow-sm z-10">
+            <a href="{% url 'chat:lista_chats' %}" class="text-gray-500 font-bold text-lg pr-1 hover:text-brandOrange transition">&larr;</a>
+            
+            <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden relative">
+                <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=100&auto=format&fit=crop" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <h2 class="font-bold text-sm text-gray-800">María (Luna)</h2>
+                <p class="text-[10px] text-brandGreen font-medium flex items-center">
+                    <span class="w-1.5 h-1.5 bg-brandGreen rounded-full inline-block mr-1 animate-pulse"></span> En línea
+                </p>
+            </div>
+        </div>
+
+        <div class="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col text-xs">
+            
+            <div class="self-start max-w-[75%]">
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 leading-relaxed">
+                    Hola! Me encantaría coordinar una cita para nuestros gatos
+                </div>
+                <span class="text-[9px] text-gray-400 mt-1 block ml-1">10:30</span>
+            </div>
+
+            <div class="self-end max-w-[75%] text-right">
+                <div class="bg-brandOrange text-white p-3 rounded-2xl rounded-tr-none shadow-sm text-left leading-relaxed">
+                    Hola María! Claro, me parece perfecto. ¿Qué día te vendría bien?
+                </div>
+                <span class="text-[9px] text-gray-400 mt-1 block mr-1">10:32</span>
+            </div>
+
+            <div class="self-start max-w-[75%]">
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 leading-relaxed">
+                    ¿Qué tal este sábado en el parque cerca de tu zona?
+                </div>
+                <span class="text-[9px] text-gray-400 mt-1 block ml-1">10:35</span>
+            </div>
+
+            <div class="self-end max-w-[75%] text-right">
+                <div class="bg-brandOrange text-white p-3 rounded-2xl rounded-tr-none shadow-sm text-left leading-relaxed">
+                    Perfecto! ¿A las 4 de la tarde está bien?
+                </div>
+                <span class="text-[9px] text-gray-400 mt-1 block mr-1">10:37</span>
+            </div>
+
+            <div class="self-start max-w-[75%]">
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 leading-relaxed">
+                    Excelente, nos vemos entonces!
+                </div>
+                <span class="text-[9px] text-gray-400 mt-1 block ml-1">10:40</span>
+            </div>
+
+        </div>
+
+        <div class="p-4 bg-white border-t border-gray-100 flex items-center space-x-2 rounded-t-2xl">
+            <input type="text" placeholder="Escribe un mensaje..." class="flex-1 bg-gray-50 border border-gray-100 rounded-full px-4 py-2.5 outline-none focus:border-brandOrange text-xs shadow-inner">
+            <button class="bg-brandOrange w-9 h-9 rounded-full flex items-center justify-center text-white font-bold hover:scale-105 active:scale-95 transition text-sm">
+                ➔
+            </button>
+        </div>
+
+    </div>
+</body>
+</html>
