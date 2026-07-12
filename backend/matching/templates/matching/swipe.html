@@ -17,10 +17,31 @@
             <p class="text-xs text-gray-400">Desliza para encontrar matches</p>
         </div>
 
+        <!-- Selector de Gato Activo -->
+        {% if gatos_aptos|length > 1 %}
+        <form method="GET" class="mb-4">
+            <label for="gato_id" class="text-xs font-semibold text-gray-500 block mb-1">Buscando pareja para:</label>
+            <select name="gato_id" id="gato_id" onchange="this.form.submit()" class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-brandOrange">
+                {% for g in gatos_aptos %}
+                <option value="{{ g.id }}" {% if g.id == gato_activo.id %}selected{% endif %}>{{ g.nombre }} ({{ g.sexo }})</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% else %}
+        <div class="mb-4 text-center">
+            <p class="text-xs font-semibold text-gray-500">Buscando pareja para: <span class="text-brandOrange font-bold">{{ gato_activo.nombre }} ({% if gato_activo.sexo == 'M' %}Macho{% else %}Hembra{% endif %})</span></p>
+        </div>
+        {% endif %}
+
+        {% if candidato %}
         <div class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden flex flex-col relative mb-4">
             
             <div class="relative w-full h-64 bg-gray-200">
-                <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=500&auto=format&fit=crop" alt="Milo" class="w-full h-full object-cover">
+                {% if candidato.foto %}
+                <img src="{{ candidato.foto.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
+                {% endif %}
                 
                 <span class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brandGreen font-semibold text-xs px-3 py-1 rounded-full flex items-center shadow-sm">
                     <span class="w-2 h-2 bg-brandGreen rounded-full inline-block mr-1.5"></span> Vacunado
@@ -30,28 +51,32 @@
             <div class="p-5 flex-1 flex flex-col justify-between">
                 <div>
                     <div class="flex items-baseline space-x-2">
-                        <h2 class="text-2xl font-bold text-gray-800">Milo</h2>
-                        <span class="text-lg text-gray-500 font-medium">3 años</span>
+                        <h2 class="text-2xl font-bold text-gray-800">{{ candidato.nombre }}</h2>
+                        <span class="text-lg text-gray-500 font-medium">{{ candidato_edad }} año{{ candidato_edad|pluralize }}</span>
                     </div>
-                    <p class="text-sm font-semibold text-brandOrange mt-0.5">Siamés</p>
-                    <p class="text-xs text-gray-400 mt-1 flex items-center">
-                        📍 4.1 km de distancia
-                    </p>
+                    <p class="text-sm font-semibold text-brandOrange mt-0.5">{{ candidato.raza }}</p>
                     <p class="text-gray-600 text-sm mt-3 leading-relaxed">
-                        Muy juguetón y sociable. Ama la compañía.
+                        {{ candidato.gustos_preferencias|default:"Sin descripción." }}
                     </p>
                 </div>
 
                 <div class="flex justify-center space-x-6 mt-4">
-                    <button class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-gray-400 font-bold text-xl shadow-md border border-gray-100 hover:text-red-500 hover:scale-105 active:scale-95 transition">
+                    <button class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-gray-400 font-bold text-xl shadow-md border border-gray-100 hover:text-red-500 hover:scale-105 active:scale-95 transition" onclick="alert('Funcionalidad de Swipe (Opción 2) no implementada todavía en el frontend.')">
                         X
                     </button>
-                    <button class="w-14 h-14 bg-brandOrange rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg hover:bg-opacity-90 hover:scale-105 active:scale-95 transition">
+                    <button class="w-14 h-14 bg-brandOrange rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg hover:bg-opacity-90 hover:scale-105 active:scale-95 transition" onclick="alert('Funcionalidad de Swipe (Opción 2) no implementada todavía en el frontend.')">
                         ♥
                     </button>
                 </div>
             </div>
         </div>
+        {% else %}
+        <div class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 flex flex-col items-center justify-center p-6 text-center mb-4">
+            <span class="text-5xl mb-4">😿</span>
+            <h3 class="font-semibold text-gray-600 mb-1">No hay más candidatos</h3>
+            <p class="text-sm text-gray-400">Vuelve más tarde o cambia de perfil para buscar más candidatos.</p>
+        </div>
+        {% endif %}
 
         <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 flex justify-around items-center shadow-lg rounded-t-2xl">
             <a href="{% url 'matching:home' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">

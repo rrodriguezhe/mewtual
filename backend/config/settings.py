@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(BASE_DIR.parent / '.env')
 
 DATABASES = {
     "default": {
