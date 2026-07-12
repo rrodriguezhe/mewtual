@@ -97,8 +97,7 @@ def register_view(request):
                     password=password
                 )
                 Profile.objects.create(user=new_user)
-            messages.success(request, "Cuenta creada exitosamente. Inicia sesión para continuar.")
-            return redirect('users:login')   # ← en lugar de login() + redirect a home
+            return login_view(request)
             
         except Exception as e:
             messages.error(request, "Ocurrió un error inesperado al crear la cuenta.")
