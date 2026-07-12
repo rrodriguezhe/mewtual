@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - Eliminar {{ gato.nombre }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#F59E0B',
+                        brandCrema: '#FEFBF6',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6">
+
+        <div class="flex items-center space-x-4 mb-8">
+            <a href="{% url 'cats:editar_perfil' gato.pk %}" class="text-gray-600 text-xl font-bold">&larr;</a>
+            <h1 class="text-xl font-bold text-gray-800">Eliminar perfil</h1>
+        </div>
+
+        <div class="flex flex-col items-center text-center py-8">
+            {% if gato.foto %}
+            <img src="{{ gato.foto.url }}" alt="{{ gato.nombre }}"
+                 class="w-24 h-24 rounded-full object-cover border-4 border-red-100 mb-4">
+            {% else %}
+            <div class="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center text-4xl mb-4">🐱</div>
+            {% endif %}
+
+            <h2 class="text-lg font-bold text-gray-800 mb-2">¿Eliminar a {{ gato.nombre }}?</h2>
+            <p class="text-sm text-gray-500 mb-1">Esta acción no se puede deshacer.</p>
+            <p class="text-sm text-gray-500 mb-8">Se eliminarán también sus vacunas y registros médicos.</p>
+
+            <form method="POST" class="w-full space-y-3">
+                {% csrf_token %}
+                <button type="submit"
+                        class="w-full bg-red-500 text-white font-semibold py-3 rounded-xl shadow-md hover:bg-red-600 transition">
+                    Sí, eliminar perfil
+                </button>
+            </form>
+
+            <a href="{% url 'cats:editar_perfil' gato.pk %}"
+               class="w-full mt-2 block text-center text-gray-500 text-sm font-medium hover:text-gray-700 transition py-3">
+                Cancelar
+            </a>
+        </div>
+
+    </div>
+</body>
+</html>
