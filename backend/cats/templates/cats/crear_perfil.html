@@ -1,0 +1,279 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - Nuevo Gato</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandOrange: '#F59E0B',
+                        brandCrema: '#FEFBF6',
+                        brandGreen: '#10B981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-10">
+
+        <!-- Encabezado -->
+        <div class="flex items-center space-x-4 mb-6">
+            <a href="{% url 'cats:mis_gatos' %}" class="text-gray-600 text-xl font-bold">&larr;</a>
+            <h1 class="text-xl font-bold text-gray-800">Nuevo Gato</h1>
+        </div>
+
+        <!-- Errores no relacionados a campo específico -->
+        {% if form.non_field_errors %}
+        <div class="mb-4 px-4 py-2 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
+            {% csrf_token %}
+
+            <!-- ── Foto ── -->
+            <div class="text-center mb-2 relative">
+                <div class="w-28 h-28 rounded-full bg-gray-200 mx-auto overflow-hidden border-4 border-white shadow-sm" id="preview-container">
+                    <img id="foto-preview" src="" alt="Vista previa" class="w-full h-full object-cover hidden">
+                    <div id="foto-placeholder" class="w-full h-full flex items-center justify-center text-4xl">🐱</div>
+                </div>
+                <label for="{{ form.foto.id_for_label }}"
+                       class="absolute bottom-0 right-[38%] bg-brandOrange p-2 rounded-full text-white shadow-md hover:scale-105 transition cursor-pointer"
+                       title="Cambiar foto">
+                    📸
+                </label>
+                <div class="hidden">{{ form.foto }}</div>
+                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB</p>
+                {% if form.foto.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.foto.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Nombre ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1" for="{{ form.nombre.id_for_label }}">
+                    Nombre <span class="text-red-400">*</span>
+                </label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.nombre.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Fecha nacimiento + Peso ── -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-500 text-sm font-medium mb-1" for="{{ form.fecha_nacimiento.id_for_label }}">
+                        Nacimiento <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.fecha_nacimiento }}
+                    {% if form.fecha_nacimiento.errors %}
+                    <p class="text-xs text-red-500 mt-1">{{ form.fecha_nacimiento.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm font-medium mb-1" for="{{ form.peso.id_for_label }}">
+                        Peso (kg)
+                    </label>
+                    {{ form.peso }}
+                    {% if form.peso.errors %}
+                    <p class="text-xs text-red-500 mt-1">{{ form.peso.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Género ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1">
+                    Género <span class="text-red-400">*</span>
+                </label>
+                <div class="flex space-x-2" id="sexo-group">
+                    {% for radio in form.sexo %}
+                    <label class="sexo-btn flex-1 cursor-pointer" data-value="{{ radio.data.value }}">
+                        {{radio.tag}}
+                        <span class="py-2.5 rounded-xl font-medium text-sm text-center block
+                                     bg-white text-gray-500 border border-gray-100
+                                     hover:bg-orange-50 transition select-none">
+                            {{ radio.choice_label }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if form.sexo.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.sexo.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Raza ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1" for="{{ form.raza.id_for_label }}">
+                    Raza <span class="text-red-400">*</span>
+                </label>
+                {{ form.raza }}
+                {% if form.raza.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ form.raza.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Color ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1" for="{{ form.color.id_for_label }}">
+                    Color de pelaje
+                </label>
+                {{ form.color }}
+            </div>
+
+            <!-- ── Descripción ── -->
+            <div>
+                <label class="block text-gray-500 text-sm font-medium mb-1" for="{{ form.gustos_preferencias.id_for_label }}">
+                    Descripción
+                </label>
+                {{ form.gustos_preferencias }}
+            </div>
+
+            <!-- ── Toggles ── -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-50 shadow-sm">
+                    <span class="text-sm text-gray-600 font-medium flex items-center">
+                        <span class="w-2.5 h-2.5 bg-brandGreen rounded-full inline-block mr-2"></span>
+                        Esterilizado
+                    </span>
+                    {{ form.esterilizado }}
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-50 shadow-sm">
+                    <span class="text-sm text-gray-600 font-medium flex items-center">
+                        <span class="mr-2">🐾</span>
+                        Modo cruce responsable
+                    </span>
+                    {{ form.modo_cruce_responsable }}
+                </div>
+                {% if form.modo_cruce_responsable.errors %}
+                <p class="text-xs text-red-500">{{ form.modo_cruce_responsable.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Sección vacuna inicial (opcional) ── -->
+            <div class="border-t border-gray-100 pt-4 mt-2">
+                <p class="text-sm font-semibold text-gray-600 mb-3">Vacuna inicial (opcional)</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">Nombre de la vacuna</label>
+                        {{ vaccine_form.nombre }}
+                        {% if vaccine_form.nombre.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ vaccine_form.nombre.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-gray-500 text-xs font-medium mb-1">Fecha aplicación</label>
+                            {{ vaccine_form.fecha_aplicacion }}
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 text-xs font-medium mb-1">Fecha vencimiento</label>
+                            {{ vaccine_form.fecha_vencimiento }}
+                        </div>
+                    </div>
+                    {% if vaccine_form.non_field_errors %}
+                    <p class="text-xs text-red-500">{{ vaccine_form.non_field_errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Certificado médico inicial (opcional) ── -->
+            <div class="border-t border-gray-100 pt-4 mt-2">
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-sm font-semibold text-gray-600">Certificado médico (opcional)</p>
+                    <span class="text-xs text-brandOrange font-medium bg-orange-50 px-2 py-0.5 rounded-full">🐾 Cruce responsable</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">
+                    Requerido para habilitar el modo cruce responsable. Debe ser emitido por un veterinario.
+                </p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">Diagnóstico o procedimiento</label>
+                        {{ medical_form.diagnostico_procedimiento }}
+                        {% if medical_form.diagnostico_procedimiento.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ medical_form.diagnostico_procedimiento.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">Notas adicionales</label>
+                        {{ medical_form.notas }}
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-xs font-medium mb-1">
+                            Adjuntar certificado <span class="text-gray-400">(PDF o imagen)</span>
+                        </label>
+                        {{ medical_form.documento }}
+                        {% if medical_form.documento.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ medical_form.documento.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% if medical_form.non_field_errors %}
+                    <p class="text-xs text-red-500">{{ medical_form.non_field_errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Botón submit ── -->
+            <button type="submit"
+                    class="w-full bg-brandOrange text-white font-semibold py-3 rounded-xl shadow-md hover:bg-opacity-90 transition mt-4">
+                Crear perfil
+            </button>
+        </form>
+
+    </div>
+
+    <script>
+        // ── Vista previa de foto ──
+        const fotoInput = document.getElementById('{{ form.foto.id_for_label }}');
+        if (fotoInput) {
+            fotoInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('foto-preview').src = e.target.result;
+                    document.getElementById('foto-preview').classList.remove('hidden');
+                    const ph = document.getElementById('foto-placeholder');
+                    if (ph) ph.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ── Selector de género tipo botón ──
+        function actualizarEstiloSexo() {
+            document.querySelectorAll('.sexo-btn').forEach(lbl => {
+                const input = lbl.querySelector('input[type=radio]');
+                const span  = lbl.querySelector('span');
+                if (!input || !span) return;
+                if (input.checked) {
+                    span.classList.add('bg-brandOrange', 'text-white', 'shadow-sm');
+                    span.classList.remove('bg-white', 'text-gray-500', 'border', 'border-gray-100', 'hover:bg-orange-50');
+                } else {
+                    span.classList.remove('bg-brandOrange', 'text-white', 'shadow-sm');
+                    span.classList.add('bg-white', 'text-gray-500', 'border', 'border-gray-100', 'hover:bg-orange-50');
+                }
+            });
+        }
+
+        // Ocultar los radios nativos y escuchar cambios
+        document.querySelectorAll('.sexo-btn input[type=radio]').forEach(input => {
+            input.classList.add('sr-only');
+            input.addEventListener('change', actualizarEstiloSexo);
+        });
+
+        // Aplicar estado inicial (si hay valor precargado en POST fallido)
+        actualizarEstiloSexo();
+    </script>
+</body>
+</html>
