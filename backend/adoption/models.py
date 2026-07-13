@@ -5,7 +5,8 @@ class AdoptionPost(models.Model):
 
     ESTADOS = [
         ("DISPONIBLE", "Disponible"),
-        ("ADOPTADO", "Adoptado"),
+        ("RESERVADA", "Reservada"),
+        ("ADOPTADA", "Adoptada"),
     ]
 
     gato = models.ForeignKey(
@@ -24,3 +25,6 @@ class AdoptionPost(models.Model):
     publicado_en = models.DateTimeField(
         auto_now_add=True
     )
+
+    def __str__(self):
+        return f"{self.gato.nombre} ({self.estado})"
