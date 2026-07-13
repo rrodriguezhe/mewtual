@@ -7,8 +7,7 @@ router = DefaultRouter()
 
 router.register(
     r"reports",
-    ReportViewSet,
-    basename="report"
+    ReportViewSet
 )
 
 urlpatterns = router.urls
