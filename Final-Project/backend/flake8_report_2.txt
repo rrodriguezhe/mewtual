@@ -1,0 +1,9 @@
+[1m./adoption\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./appointments\models.py[m[36m:[m2[36m:[m1[36m:[m [1m[31mF401[m 'cats.models.Cat' imported but unused
+[1m./appointments\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./cats\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./chat\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./matching\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./reports\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./users\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./users\views.py[m[36m:[m102[36m:[m9[36m:[m [1m[31mF841[m local variable 'e' is assigned to but never used
