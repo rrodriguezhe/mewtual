@@ -1,0 +1,52 @@
+[1m./adoption\admin.py[m[36m:[m4[36m:[m34[36m:[m [1m[31mW292[m no newline at end of file
+[1m./adoption\models.py[m[36m:[m4[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 0
+[1m./adoption\models.py[m[36m:[m26[36m:[m6[36m:[m [1m[31mW292[m no newline at end of file
+[1m./adoption\serializers.py[m[36m:[m9[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./adoption\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./adoption\urls.py[m[36m:[m13[36m:[m26[36m:[m [1m[31mW292[m no newline at end of file
+[1m./adoption\views.py[m[36m:[m11[36m:[m46[36m:[m [1m[31mW292[m no newline at end of file
+[1m./appointments\admin.py[m[36m:[m4[36m:[m33[36m:[m [1m[31mW292[m no newline at end of file
+[1m./appointments\models.py[m[36m:[m2[36m:[m1[36m:[m [1m[31mF401[m 'cats.models.Cat' imported but unused
+[1m./appointments\models.py[m[36m:[m5[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 1
+[1m./appointments\models.py[m[36m:[m32[36m:[m46[36m:[m [1m[31mW292[m no newline at end of file
+[1m./appointments\serializers.py[m[36m:[m9[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./appointments\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./appointments\urls.py[m[36m:[m15[36m:[m2[36m:[m [1m[31mW292[m no newline at end of file
+[1m./cats\admin.py[m[36m:[m7[36m:[m30[36m:[m [1m[31mW292[m no newline at end of file
+[1m./cats\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./chat\admin.py[m[36m:[m5[36m:[m29[36m:[m [1m[31mW292[m no newline at end of file
+[1m./chat\models.py[m[36m:[m21[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 1
+[1m./chat\models.py[m[36m:[m41[36m:[m1[36m:[m [1m[31mW391[m blank line at end of file
+[1m./chat\serializers.py[m[36m:[m15[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./chat\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./chat\urls.py[m[36m:[m27[36m:[m2[36m:[m [1m[31mW292[m no newline at end of file
+[1m./chat\views.py[m[36m:[m10[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 1
+[1m./chat\views.py[m[36m:[m19[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 1
+[1m./chat\views.py[m[36m:[m22[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 0
+[1m./chat\views.py[m[36m:[m24[36m:[m56[36m:[m [1m[31mW292[m no newline at end of file
+[1m./config\settings.py[m[36m:[m84[36m:[m1[36m:[m [1m[31mE402[m module level import not at top of file
+[1m./config\settings.py[m[36m:[m85[36m:[m1[36m:[m [1m[31mE402[m module level import not at top of file
+[1m./config\settings.py[m[36m:[m142[36m:[m36[36m:[m [1m[31mW292[m no newline at end of file
+[1m./config\urls.py[m[36m:[m26[36m:[m5[36m:[m [1m[31mE265[m block comment should start with '# '
+[1m./config\urls.py[m[36m:[m27[36m:[m5[36m:[m [1m[31mE265[m block comment should start with '# '
+[1m./config\urls.py[m[36m:[m28[36m:[m5[36m:[m [1m[31mE265[m block comment should start with '# '
+[1m./config\urls.py[m[36m:[m29[36m:[m5[36m:[m [1m[31mE265[m block comment should start with '# '
+[1m./config\urls.py[m[36m:[m44[36m:[m6[36m:[m [1m[31mW292[m no newline at end of file
+[1m./matching\admin.py[m[36m:[m4[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./matching\models.py[m[36m:[m4[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 1
+[1m./matching\serializers.py[m[36m:[m9[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./matching\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./matching\urls.py[m[36m:[m19[36m:[m2[36m:[m [1m[31mW292[m no newline at end of file
+[1m./matching\views.py[m[36m:[m11[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 1
+[1m./matching\views.py[m[36m:[m104[36m:[m59[36m:[m [1m[31mW292[m no newline at end of file
+[1m./reports\admin.py[m[36m:[m4[36m:[m28[36m:[m [1m[31mW292[m no newline at end of file
+[1m./reports\models.py[m[36m:[m4[36m:[m1[36m:[m [1m[31mE302[m expected 2 blank lines, found 0
+[1m./reports\models.py[m[36m:[m34[36m:[m6[36m:[m [1m[31mW292[m no newline at end of file
+[1m./reports\serializers.py[m[36m:[m10[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./reports\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./reports\urls.py[m[36m:[m13[36m:[m26[36m:[m [1m[31mW292[m no newline at end of file
+[1m./reports\views.py[m[36m:[m11[36m:[m40[36m:[m [1m[31mW292[m no newline at end of file
+[1m./users\admin.py[m[36m:[m5[36m:[m27[36m:[m [1m[31mW292[m no newline at end of file
+[1m./users\models.py[m[36m:[m71[36m:[m79[36m:[m [1m[31mW292[m no newline at end of file
+[1m./users\tests.py[m[36m:[m1[36m:[m1[36m:[m [1m[31mF401[m 'django.test.TestCase' imported but unused
+[1m./users\views.py[m[36m:[m102[36m:[m9[36m:[m [1m[31mF841[m local variable 'e' is assigned to but never used
