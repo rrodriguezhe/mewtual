@@ -27,7 +27,6 @@ urlpatterns = [
     # path("api/users/", include("users.urls")),
     # path("api/matching/", include("matching.urls")),
     # path("api/chat/", include("chat.urls")),
-    path("api/appointments/", include("appointments.urls")),
     path("api/adoption/", include("adoption.urls")),
     path("api/reports/", include("reports.urls")),
     path('users/', include('users.urls')),

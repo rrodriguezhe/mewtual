@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'cats',
     'matching',
     'chat',
-    'appointments',
     'adoption',
     'reports',
     'rest_framework'

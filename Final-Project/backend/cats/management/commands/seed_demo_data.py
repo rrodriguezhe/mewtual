@@ -4,9 +4,7 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils import timezone
 
-from appointments.models import Appointment
 from cats.models import Cat, MedicalRecord, Vaccine
 from chat.models import Chat, Message
 from matching.models import Match
@@ -47,7 +45,7 @@ CATS = [
 
 
 class Command(BaseCommand):
-    help = "Seed demo users, cats (eligible for cruce responsable) and a match/chat/appointment."
+    help = "Seed demo users, cats (eligible for cruce responsable) and a match/chat."
 
     def handle(self, *args, **options):
         with transaction.atomic():
@@ -144,14 +142,6 @@ class Command(BaseCommand):
                 chat=chat,
                 remitente=luna.owner,
                 contenido="Hola Carlos! Claro, cuéntame mas sobre Simba.",
-            )
-
-        if not Appointment.objects.filter(match=match).exists():
-            Appointment.objects.create(
-                match=match,
-                fecha=timezone.now() + timedelta(days=7),
-                ubicacion="Parque Central, Bogota",
-                estado="PENDIENTE",
             )
 
         # Milo (demo_andres) and Nala (demo_maria) are left unmatched on purpose
