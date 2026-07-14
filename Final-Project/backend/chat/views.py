@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -14,13 +14,22 @@ from .serializers import (
 
 
 class ChatViewSet(viewsets.ModelViewSet):
-    queryset = Chat.objects.all()
     serializer_class = ChatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return _chats_de_usuario(self.request.user)
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Message.objects.filter(chat__in=_chats_de_usuario(self.request.user))
+
+    def perform_create(self, serializer):
+        serializer.save(remitente=self.request.user)
 
 
 def _chats_de_usuario(user):
