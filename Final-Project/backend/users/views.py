@@ -1,5 +1,6 @@
 from rest_framework import permissions, viewsets
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
@@ -138,3 +139,8 @@ def logout_view(request):
     logout(request)
     messages.success(request, "Has cerrado sesión exitosamente. ¡Te esperamos pronto en Mewtual!")
     return redirect('users:login')
+
+
+@login_required
+def mi_cuenta_view(request):
+    return render(request, 'users/mi_cuenta.html')

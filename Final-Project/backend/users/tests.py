@@ -133,6 +133,26 @@ class LogoutViewTests(TestCase):
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
 
+class MiCuentaViewTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="alice", email="alice@example.com", password="StrongPass123!"
+        )
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.get(reverse("users:mi_cuenta"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_logged_in_user_sees_own_account_info(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.get(reverse("users:mi_cuenta"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "alice")
+        self.assertContains(response, "alice@example.com")
+
+
 class UserViewSetAPITests(APITestCase):
 
     def setUp(self):
