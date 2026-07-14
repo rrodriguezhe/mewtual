@@ -57,70 +57,60 @@
             {% if gatos %}
                 {% for item in gatos %}
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="flex items-center space-x-4">
+                    <a href="{% url 'cats:ver_perfil' item.obj.pk %}" class="flex items-center space-x-4">
+                        <!-- Foto -->
+                        {% if item.obj.foto %}
+                        <img src="{{ item.obj.foto.url }}"
+                             alt="Foto de {{ item.obj.nombre }}"
+                             class="w-16 h-16 rounded-full object-cover border-2
+                             {% if item.vacunado %}border-brandOrange{% else %}border-gray-200{% endif %}">
+                        {% else %}
+                        <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center
+                                    border-2 {% if item.vacunado %}border-brandOrange{% else %}border-gray-200{% endif %}">
+                            <span class="text-2xl">🐱</span>
+                        </div>
+                        {% endif %}
 
-                        <a href="{% url 'cats:ver_perfil' item.obj.pk %}" class="flex items-center space-x-4 flex-1 min-w-0">
-                            <!-- Foto -->
-                            {% if item.obj.foto %}
-                            <img src="{{ item.obj.foto.url }}"
-                                 alt="Foto de {{ item.obj.nombre }}"
-                                 class="w-16 h-16 rounded-full object-cover border-2
-                                 {% if item.vacunado %}border-brandOrange{% else %}border-gray-200{% endif %}">
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline gap-2">
+                                <h3 class="font-bold text-gray-800 text-base truncate">{{ item.obj.nombre }}</h3>
+                                <span class="text-xs font-semibold text-brandOrange bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                    {{ item.obj.sexo|default:"—" }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                {{ item.obj.raza }} • {{ item.edad }} año{{ item.edad|pluralize }}
+                            </p>
+
+                            <!-- Estado vacunación -->
+                            {% if item.vacunado %}
+                            <div class="flex items-center mt-1 text-[11px] text-brandGreen font-medium">
+                                <span class="w-2 h-2 bg-brandGreen rounded-full inline-block mr-1"></span>
+                                Vacunado
+                            </div>
                             {% else %}
-                            <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center
-                                        border-2 {% if item.vacunado %}border-brandOrange{% else %}border-gray-200{% endif %}">
-                                <span class="text-2xl">🐱</span>
+                            <div class="flex items-center mt-1 text-[11px] text-red-400 font-medium">
+                                <span class="w-2 h-2 bg-red-400 rounded-full inline-block mr-1"></span>
+                                Sin vacuna vigente
                             </div>
                             {% endif %}
 
-                            <!-- Info -->
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-baseline gap-2">
-                                    <h3 class="font-bold text-gray-800 text-base truncate">{{ item.obj.nombre }}</h3>
-                                    <span class="text-xs font-semibold text-brandOrange bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                        {{ item.obj.sexo|default:"—" }}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-0.5">
-                                    {{ item.obj.raza }} • {{ item.edad }} año{{ item.edad|pluralize }}
-                                </p>
-
-                                <!-- Estado vacunación -->
-                                {% if item.vacunado %}
-                                <div class="flex items-center mt-1 text-[11px] text-brandGreen font-medium">
-                                    <span class="w-2 h-2 bg-brandGreen rounded-full inline-block mr-1"></span>
-                                    Vacunado
-                                </div>
-                                {% else %}
-                                <div class="flex items-center mt-1 text-[11px] text-red-400 font-medium">
-                                    <span class="w-2 h-2 bg-red-400 rounded-full inline-block mr-1"></span>
-                                    Sin vacuna vigente
-                                </div>
-                                {% endif %}
-
-                                <!-- Estado cruce responsable -->
-                                {% if item.cruce.apto and item.obj.modo_cruce_responsable %}
-                                <div class="flex items-center mt-0.5 text-[11px] text-brandOrange font-medium">
-                                    <span class="mr-1">🐾</span> Cruce responsable activo
-                                </div>
-                                {% elif item.obj.modo_cruce_responsable and not item.cruce.apto %}
-                                <div class="flex items-center mt-0.5 text-[11px] text-gray-400 font-medium">
-                                    <span class="mr-1">🐾</span>
-                                    Cruce —
-                                    {% if not item.cruce.vacuna_vigente %}sin vacuna{% endif %}
-                                    {% if not item.cruce.certificado_medico %}sin certificado{% endif %}
-                                </div>
-                                {% endif %}
+                            <!-- Estado cruce responsable -->
+                            {% if item.cruce.apto and item.obj.modo_cruce_responsable %}
+                            <div class="flex items-center mt-0.5 text-[11px] text-brandOrange font-medium">
+                                <span class="mr-1">🐾</span> Cruce responsable activo
                             </div>
-                        </a>
-
-                        <!-- Acciones -->
-                        <div class="flex flex-col gap-1 ml-1">
-                            <a href="{% url 'cats:eliminar_perfil' item.obj.pk %}"
-                               class="text-xs text-gray-400 hover:text-red-400 transition px-2 py-1 rounded-lg hover:bg-red-50"
-                               title="Eliminar">🗑️</a>
+                            {% elif item.obj.modo_cruce_responsable and not item.cruce.apto %}
+                            <div class="flex items-center mt-0.5 text-[11px] text-gray-400 font-medium">
+                                <span class="mr-1">🐾</span>
+                                Cruce —
+                                {% if not item.cruce.vacuna_vigente %}sin vacuna{% endif %}
+                                {% if not item.cruce.certificado_medico %}sin certificado{% endif %}
+                            </div>
+                            {% endif %}
                         </div>
-                    </div>
+                    </a>
                 </div>
                 {% endfor %}
 

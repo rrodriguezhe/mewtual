@@ -235,10 +235,11 @@ class CatTemplateViewOwnershipTests(TestCase):
         self.assertRedirects(response, reverse("cats:mis_gatos"))
         self.assertFalse(Cat.objects.filter(pk=self.alice_cat.pk).exists())
 
-    def test_mis_gatos_list_row_has_no_editar_link(self):
+    def test_mis_gatos_list_row_has_no_editar_or_eliminar_link(self):
         self.client.login(username="alice", password="pass12345")
         response = self.client.get(reverse("cats:mis_gatos"))
         self.assertNotContains(response, reverse("cats:editar_perfil", args=[self.alice_cat.pk]))
+        self.assertNotContains(response, reverse("cats:eliminar_perfil", args=[self.alice_cat.pk]))
         self.assertContains(response, reverse("cats:ver_perfil", args=[self.alice_cat.pk]))
 
 
@@ -262,13 +263,19 @@ class VerPerfilViewTests(TestCase):
         response = self.client.get(reverse("cats:ver_perfil", args=[9999]))
         self.assertEqual(response.status_code, 404)
 
-    def test_owner_sees_editar_not_contactar_or_reportar(self):
+    def test_owner_sees_editar_and_eliminar_not_contactar_or_reportar(self):
         self.client.login(username="bob", password="pass12345")
         response = self.client.get(self.detail_url())
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Editar")
+        self.assertContains(response, reverse("cats:eliminar_perfil", args=[self.bob_cat.pk]))
         self.assertNotContains(response, "Contactar")
         self.assertNotContains(response, "Reportar")
+
+    def test_non_owner_does_not_see_eliminar_link(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url())
+        self.assertNotContains(response, reverse("cats:eliminar_perfil", args=[self.bob_cat.pk]))
 
     def test_non_owner_with_open_post_sees_contactar_and_reportar(self):
         AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Luna en adopción")
