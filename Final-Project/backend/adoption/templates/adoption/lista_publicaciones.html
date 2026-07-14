@@ -45,7 +45,8 @@
         <div class="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
             {% if publicaciones %}
                 {% for post in publicaciones %}
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                <a href="{% url 'adoption:detalle_publicacion' post.id %}"
+                   class="block bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                     <div class="flex items-center space-x-4">
                         {% if post.gato.foto %}
                         <img src="{{ post.gato.foto.url }}" alt="{{ post.gato.nombre }}"
@@ -61,14 +62,7 @@
                             <p class="text-xs text-gray-600 mt-1.5 line-clamp-2">{{ post.descripcion }}</p>
                         </div>
                     </div>
-                    <div class="flex justify-end mt-2">
-                        <a href="{% url 'reports:crear_reporte' %}?usuario={{ post.gato.owner.id }}"
-                           class="text-xs text-gray-400 hover:text-red-400 transition px-2 py-1 rounded-lg hover:bg-red-50"
-                           title="Reportar a {{ post.gato.owner.username }}">
-                            🚩 Reportar
-                        </a>
-                    </div>
-                </div>
+                </a>
                 {% endfor %}
             {% else %}
             <div class="flex flex-col items-center justify-center py-16 text-center">

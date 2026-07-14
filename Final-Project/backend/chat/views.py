@@ -1,10 +1,13 @@
 from rest_framework import permissions, viewsets
-from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.db.models import Q, Max
 from django.utils import timezone
+
+from adoption.models import AdoptionPost
 
 from .models import Chat, Message
 from .serializers import (
@@ -33,24 +36,33 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 
 def _chats_de_usuario(user):
-    """Chats en los que el usuario participa a traves de alguno de sus gatos."""
+    """Chats en los que el usuario participa, ya sea via un match o una publicacion de adopcion."""
     return Chat.objects.filter(
-        Q(match__gato_emisor__owner=user) | Q(match__gato_receptor__owner=user)
+        Q(match__gato_emisor__owner=user) | Q(match__gato_receptor__owner=user) |
+        Q(publicacion_adopcion__gato__owner=user) | Q(iniciador=user)
     ).select_related(
         "match",
         "match__gato_emisor",
         "match__gato_receptor",
         "match__gato_emisor__owner",
         "match__gato_receptor__owner",
+        "publicacion_adopcion__gato",
+        "publicacion_adopcion__gato__owner",
+        "iniciador",
     ).distinct()
 
 
-def _otro_gato(chat, user):
-    """Devuelve el gato de la otra persona dentro del match de este chat."""
-    match = chat.match
-    if match.gato_emisor.owner_id == user.id:
-        return match.gato_receptor
-    return match.gato_emisor
+def _otro_participante(chat, user):
+    """Devuelve (otro_usuario, otro_gato) para la otra persona en este chat."""
+    if chat.match_id:
+        match = chat.match
+        otro_gato = match.gato_receptor if match.gato_emisor.owner_id == user.id else match.gato_emisor
+        return otro_gato.owner, otro_gato
+
+    post = chat.publicacion_adopcion
+    otro_gato = post.gato
+    otro_usuario = otro_gato.owner if chat.iniciador_id == user.id else chat.iniciador
+    return otro_usuario, otro_gato
 
 
 @login_required
@@ -61,12 +73,12 @@ def lista_chats(request):
 
     chats_data = []
     for chat in chats:
-        otro_gato = _otro_gato(chat, request.user)
+        otro_usuario, otro_gato = _otro_participante(chat, request.user)
         ultimo_mensaje = chat.message_set.order_by("-fecha_envio").first()
         chats_data.append({
             "chat": chat,
             "otro_gato": otro_gato,
-            "otro_usuario": otro_gato.owner,
+            "otro_usuario": otro_usuario,
             "ultimo_mensaje": ultimo_mensaje,
         })
 
@@ -76,15 +88,29 @@ def lista_chats(request):
 @login_required
 def chat_individual(request, chat_id):
     chat = get_object_or_404(_chats_de_usuario(request.user), id=chat_id)
-    otro_gato = _otro_gato(chat, request.user)
+    otro_usuario, otro_gato = _otro_participante(chat, request.user)
     mensajes = chat.message_set.select_related("remitente").order_by("fecha_envio")
 
     return render(request, "chat/chat_individual.html", {
         "chat": chat,
         "otro_gato": otro_gato,
-        "otro_usuario": otro_gato.owner,
+        "otro_usuario": otro_usuario,
         "mensajes": mensajes,
     })
+
+
+@login_required
+@require_POST
+def iniciar_chat_adopcion(request, post_id):
+    post = get_object_or_404(AdoptionPost, pk=post_id, estado="DISPONIBLE")
+    if post.gato.owner_id == request.user.id:
+        messages.error(request, "No puedes contactarte a ti mismo.")
+        return redirect('adoption:detalle_publicacion', post_id=post.id)
+
+    chat, _ = Chat.objects.get_or_create(
+        publicacion_adopcion=post, iniciador=request.user
+    )
+    return redirect('chat:chat_individual', chat_id=chat.id)
 
 
 @login_required

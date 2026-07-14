@@ -19,8 +19,12 @@ class MessageSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request:
             user = request.user
-            match = value.match
-            if match.gato_emisor.owner_id != user.id and match.gato_receptor.owner_id != user.id:
+            if value.match_id:
+                match = value.match
+                participa = match.gato_emisor.owner_id == user.id or match.gato_receptor.owner_id == user.id
+            else:
+                participa = value.publicacion_adopcion.gato.owner_id == user.id or value.iniciador_id == user.id
+            if not participa:
                 raise serializers.ValidationError(
                     "No puedes enviar mensajes a un chat en el que no participas."
                 )

@@ -6,6 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from adoption.models import AdoptionPost
 from cats.models import Cat
 from matching.models import Match
 
@@ -78,6 +79,76 @@ class ChatTemplateViewTests(TestCase):
         self.assertEqual(response.context["otro_gato"], self.alice_cat)
         self.assertEqual(response.context["otro_usuario"], self.alice)
         self.assertIn(self.message, list(response.context["mensajes"]))
+
+    def test_adoption_chat_visible_to_both_sides_with_correct_context(self):
+        post = AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Nala en adopción")
+        adoption_chat = Chat.objects.create(publicacion_adopcion=post, iniciador=self.carol)
+
+        self.client.login(username="carol", password="pass12345")
+        response = self.client.get(reverse("chat:chat_individual", args=[adoption_chat.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["otro_gato"], self.bob_cat)
+        self.assertEqual(response.context["otro_usuario"], self.bob)
+
+        self.client.login(username="bob", password="pass12345")
+        response = self.client.get(reverse("chat:chat_individual", args=[adoption_chat.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["otro_gato"], self.bob_cat)
+        self.assertEqual(response.context["otro_usuario"], self.carol)
+
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(reverse("chat:lista_chats"))
+        chat_ids = [item["chat"].id for item in response.context["chats_data"]]
+        self.assertNotIn(adoption_chat.id, chat_ids)
+
+
+class IniciarChatAdopcionViewTests(TestCase):
+
+    def setUp(self):
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.carol = User.objects.create_user(username="carol", password="pass12345")
+        self.bob_cat = _make_cat(self.bob, "F", "Luna")
+        self.post = AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Luna en adopción")
+
+    def _url(self, post_id=None):
+        return reverse("chat:iniciar_chat_adopcion", args=[post_id or self.post.id])
+
+    def test_get_not_allowed(self):
+        self.client.login(username="carol", password="pass12345")
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 405)
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_owner_cannot_contact_self(self):
+        self.client.login(username="bob", password="pass12345")
+        response = self.client.post(self._url())
+        self.assertRedirects(response, reverse("adoption:detalle_publicacion", args=[self.post.id]))
+        self.assertFalse(Chat.objects.filter(publicacion_adopcion=self.post).exists())
+
+    def test_creates_chat_on_first_post(self):
+        self.client.login(username="carol", password="pass12345")
+        response = self.client.post(self._url())
+        chat = Chat.objects.get(publicacion_adopcion=self.post, iniciador=self.carol)
+        self.assertRedirects(response, reverse("chat:chat_individual", args=[chat.id]))
+
+    def test_second_post_reuses_same_chat(self):
+        self.client.login(username="carol", password="pass12345")
+        self.client.post(self._url())
+        self.client.post(self._url())
+        self.assertEqual(
+            Chat.objects.filter(publicacion_adopcion=self.post, iniciador=self.carol).count(), 1
+        )
+
+    def test_post_not_disponible_404s(self):
+        self.post.estado = "ADOPTADA"
+        self.post.save()
+        self.client.login(username="carol", password="pass12345")
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 404)
 
 
 class EnviarMensajeViewTests(TestCase):
