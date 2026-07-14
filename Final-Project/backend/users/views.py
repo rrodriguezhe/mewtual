@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from .models import Profile, Block
+from .forms import AccountNameForm, ProfilePictureForm
 from .serializers import (
     UserSerializer,
     ProfileSerializer,
@@ -143,4 +144,24 @@ def logout_view(request):
 
 @login_required
 def mi_cuenta_view(request):
-    return render(request, 'users/mi_cuenta.html')
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        account_form = AccountNameForm(request.POST, instance=request.user)
+        picture_form = ProfilePictureForm(request.POST, request.FILES, instance=profile)
+
+        if account_form.is_valid() and picture_form.is_valid():
+            account_form.save()
+            picture_form.save()
+            messages.success(request, "Tu cuenta se actualizó correctamente.")
+            return redirect('users:mi_cuenta')
+        messages.error(request, "Por favor corrige los errores del formulario.")
+    else:
+        account_form = AccountNameForm(instance=request.user)
+        picture_form = ProfilePictureForm(instance=profile)
+
+    return render(request, 'users/mi_cuenta.html', {
+        'account_form': account_form,
+        'picture_form': picture_form,
+        'profile': profile,
+    })
