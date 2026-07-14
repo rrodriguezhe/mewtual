@@ -9,6 +9,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from adoption.models import AdoptionPost
+
 from .forms import CatForm, MedicalRecordForm, VaccineForm
 from .models import Cat, MedicalRecord, Vaccine
 from .views import calcular_edad, puede_cruce_responsable, vacunas_vigentes
@@ -232,6 +234,63 @@ class CatTemplateViewOwnershipTests(TestCase):
         response = self.client.post(reverse("cats:eliminar_perfil", args=[self.alice_cat.pk]))
         self.assertRedirects(response, reverse("cats:mis_gatos"))
         self.assertFalse(Cat.objects.filter(pk=self.alice_cat.pk).exists())
+
+    def test_mis_gatos_list_row_has_no_editar_link(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(reverse("cats:mis_gatos"))
+        self.assertNotContains(response, reverse("cats:editar_perfil", args=[self.alice_cat.pk]))
+        self.assertContains(response, reverse("cats:ver_perfil", args=[self.alice_cat.pk]))
+
+
+class VerPerfilViewTests(TestCase):
+
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="pass12345")
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.bob_cat = _make_cat(self.bob, "F", "Luna")
+
+    def detail_url(self):
+        return reverse("cats:ver_perfil", args=[self.bob_cat.pk])
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.get(self.detail_url())
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_nonexistent_cat_404s(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(reverse("cats:ver_perfil", args=[9999]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_sees_editar_not_contactar_or_reportar(self):
+        self.client.login(username="bob", password="pass12345")
+        response = self.client.get(self.detail_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Editar")
+        self.assertNotContains(response, "Contactar")
+        self.assertNotContains(response, "Reportar")
+
+    def test_non_owner_with_open_post_sees_contactar_and_reportar(self):
+        AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Luna en adopción")
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Contactar")
+        self.assertContains(response, "Reportar")
+        self.assertNotContains(response, "Editar")
+
+    def test_non_owner_without_open_post_sees_only_reportar(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Contactar")
+        self.assertContains(response, "Reportar")
+
+    def test_non_disponible_post_hides_contactar(self):
+        AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Luna en adopción", estado="ADOPTADA")
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url())
+        self.assertNotContains(response, "Contactar")
 
 
 class CatViewSetAPITests(APITestCase):

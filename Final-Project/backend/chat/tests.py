@@ -126,7 +126,7 @@ class IniciarChatAdopcionViewTests(TestCase):
     def test_owner_cannot_contact_self(self):
         self.client.login(username="bob", password="pass12345")
         response = self.client.post(self._url())
-        self.assertRedirects(response, reverse("adoption:detalle_publicacion", args=[self.post.id]))
+        self.assertRedirects(response, reverse("cats:ver_perfil", args=[self.bob_cat.id]))
         self.assertFalse(Chat.objects.filter(publicacion_adopcion=self.post).exists())
 
     def test_creates_chat_on_first_post(self):

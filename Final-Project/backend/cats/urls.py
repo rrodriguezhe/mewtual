@@ -13,6 +13,7 @@ urlpatterns = [
     # Vistas de plantilla
     path("mis_gatos/", views.mis_gatos, name="mis_gatos"),
     path("nuevo/", views.crear_perfil, name="crear_perfil"),
+    path("<int:cat_id>/", views.ver_perfil, name="ver_perfil"),
     path("<int:cat_id>/editar/", views.editar_perfil, name="editar_perfil"),
     path("<int:cat_id>/eliminar/", views.eliminar_perfil, name="eliminar_perfil"),
     path("vacuna/<int:vacuna_id>/eliminar/", views.eliminar_vacuna, name="eliminar_vacuna"),
