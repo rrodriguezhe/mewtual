@@ -19,13 +19,30 @@ USERS = [
     {"username": "demo_laura", "email": "laura@example.com"},
     {"username": "demo_andres", "email": "andres@example.com"},
     {"username": "demo_maria", "email": "maria@example.com"},
+    {"username": "demo_diego", "email": "diego@example.com"},
+    {"username": "demo_valentina", "email": "valentina@example.com"},
+    {"username": "demo_santiago", "email": "santiago@example.com"},
+    {"username": "demo_camila", "email": "camila@example.com"},
+    {"username": "demo_mateo", "email": "mateo@example.com"},
+    {"username": "demo_sofia", "email": "sofia@example.com"},
+    {"username": "demo_juan", "email": "juan@example.com"},
 ]
 
 CATS = [
-    {"owner": "demo_carlos", "nombre": "Simba", "sexo": "M", "raza": "Persa", "color": "Naranja"},
-    {"owner": "demo_laura", "nombre": "Luna", "sexo": "F", "raza": "Siames", "color": "Crema"},
-    {"owner": "demo_andres", "nombre": "Milo", "sexo": "M", "raza": "Bengala", "color": "Atigrado"},
-    {"owner": "demo_maria", "nombre": "Nala", "sexo": "F", "raza": "Angora", "color": "Blanco"},
+    {"owner": "demo_carlos", "nombre": "Simba", "sexo": "M", "raza": "Persa", "color": "Naranja", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_laura", "nombre": "Luna", "sexo": "F", "raza": "Siames", "color": "Crema", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_andres", "nombre": "Milo", "sexo": "M", "raza": "Bengala", "color": "Atigrado", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_maria", "nombre": "Nala", "sexo": "F", "raza": "Angora", "color": "Blanco", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_diego", "nombre": "Rocco", "sexo": "M", "raza": "Maine Coon", "color": "Gris", "edad_anios": 3, "peso": 6.5},
+    {"owner": "demo_diego", "nombre": "Bigotes", "sexo": "M", "raza": "Criollo", "color": "Negro", "edad_anios": 1, "peso": 3.5},
+    {"owner": "demo_valentina", "nombre": "Mia", "sexo": "F", "raza": "Persa", "color": "Blanco", "edad_anios": 4, "peso": 3.8},
+    {"owner": "demo_valentina", "nombre": "Coco", "sexo": "F", "raza": "Siames", "color": "Crema", "edad_anios": 2, "peso": 3.6},
+    {"owner": "demo_santiago", "nombre": "Toby", "sexo": "M", "raza": "Bengala", "color": "Dorado", "edad_anios": 3, "peso": 5.0},
+    {"owner": "demo_camila", "nombre": "Frida", "sexo": "F", "raza": "Angora", "color": "Blanco y Negro", "edad_anios": 1, "peso": 3.2},
+    {"owner": "demo_mateo", "nombre": "Leo", "sexo": "M", "raza": "Criollo", "color": "Naranja", "edad_anios": 5, "peso": 5.4},
+    {"owner": "demo_sofia", "nombre": "Estrella", "sexo": "F", "raza": "Ragdoll", "color": "Blanco", "edad_anios": 2, "peso": 4.0},
+    {"owner": "demo_juan", "nombre": "Zeus", "sexo": "M", "raza": "Maine Coon", "color": "Gris y Blanco", "edad_anios": 4, "peso": 7.0},
+    {"owner": "demo_juan", "nombre": "Michi", "sexo": "M", "raza": "Criollo", "color": "Atigrado", "edad_anios": 1, "peso": 3.3},
 ]
 
 
@@ -67,8 +84,8 @@ class Command(BaseCommand):
                 defaults={
                     "raza": c["raza"],
                     "sexo": c["sexo"],
-                    "fecha_nacimiento": date.today() - timedelta(days=365 * 2),
-                    "peso": 4.2,
+                    "fecha_nacimiento": date.today() - timedelta(days=365 * c["edad_anios"]),
+                    "peso": c["peso"],
                     "color": c["color"],
                     "gustos_preferencias": "Le gusta dormir al sol y jugar con hilos.",
                     "esterilizado": False,
