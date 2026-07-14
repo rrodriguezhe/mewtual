@@ -34,6 +34,8 @@ urlpatterns = [
     path('matching/', include('matching.urls')),
     path('cats/', include('cats.urls')),
     path('chat/', include('chat.urls')),
+    path('adoption/', include('adoption.template_urls')),
+    path('reports/', include('reports.template_urls')),
     path('', lambda request: redirect('users:login', permanent=False)),
 ]
 
