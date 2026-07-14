@@ -105,7 +105,7 @@ def iniciar_chat_adopcion(request, post_id):
     post = get_object_or_404(AdoptionPost, pk=post_id, estado="DISPONIBLE")
     if post.gato.owner_id == request.user.id:
         messages.error(request, "No puedes contactarte a ti mismo.")
-        return redirect('adoption:detalle_publicacion', post_id=post.id)
+        return redirect('cats:ver_perfil', cat_id=post.gato_id)
 
     chat, _ = Chat.objects.get_or_create(
         publicacion_adopcion=post, iniciador=request.user

@@ -4,7 +4,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import permissions, viewsets
 
 from cats.models import Cat
-from cats.views import calcular_edad
 from .forms import AdoptionPostEstadoForm, AdoptionPostForm
 from .models import AdoptionPost
 from .serializers import AdoptionPostSerializer
@@ -42,19 +41,6 @@ def lista_publicaciones(request):
 
     return render(request, "adoption/lista_publicaciones.html", {"publicaciones": publicaciones})
 
-
-@login_required
-def detalle_publicacion(request, post_id):
-    """Vista de detalle de una publicación de adopción, con el perfil completo del gato."""
-    post = get_object_or_404(AdoptionPost, pk=post_id)
-    edad = calcular_edad(post.gato.fecha_nacimiento)
-    puede_contactar = post.estado == "DISPONIBLE" and post.gato.owner_id != request.user.id
-
-    return render(request, "adoption/detalle_publicacion.html", {
-        "post": post,
-        "edad": edad,
-        "puede_contactar": puede_contactar,
-    })
 
 
 @login_required

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - {{ gato.nombre }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { brandOrange: '#F59E0B', brandCrema: '#FEFBF6', brandGreen: '#10B981' } } } }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-10">
+
+        <div class="flex items-center space-x-4 mb-4">
+            <a href="javascript:history.back()" class="text-gray-600 text-xl font-bold">&larr;</a>
+            <h1 class="text-xl font-bold text-gray-800">{{ gato.nombre }}</h1>
+        </div>
+
+        {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-2 rounded-xl text-sm font-medium
+                {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-100
+                {% else %}bg-green-50 text-green-700 border border-green-100{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="w-full h-64 rounded-3xl bg-gray-200 overflow-hidden mb-4 shadow-sm">
+            {% if gato.foto %}
+            <img src="{{ gato.foto.url }}" alt="{{ gato.nombre }}" class="w-full h-full object-cover">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center text-6xl">🐱</div>
+            {% endif %}
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
+            <div class="flex items-baseline justify-between mb-2">
+                <h2 class="text-xl font-bold text-gray-800">{{ gato.nombre }}</h2>
+                <span class="text-sm text-gray-500">{{ edad }} año{{ edad|pluralize }}</span>
+            </div>
+            <p class="text-sm font-semibold text-brandOrange mb-3">{{ gato.raza }}</p>
+
+            <div class="grid grid-cols-2 gap-3 text-xs text-gray-600 mb-3">
+                <p><span class="text-gray-400">Sexo:</span> {{ gato.get_sexo_display }}</p>
+                <p><span class="text-gray-400">Peso:</span> {{ gato.peso }} kg</p>
+                <p><span class="text-gray-400">Color:</span> {{ gato.color }}</p>
+                <p><span class="text-gray-400">Esterilizado:</span> {{ gato.esterilizado|yesno:"Sí,No" }}</p>
+            </div>
+
+            {% if gato.gustos_preferencias %}
+            <p class="text-xs text-gray-400 mb-1">Personalidad</p>
+            <p class="text-sm text-gray-700 mb-3">{{ gato.gustos_preferencias }}</p>
+            {% endif %}
+
+            {% if post_adopcion %}
+            <p class="text-xs text-gray-400 mb-1">Descripción de la publicación</p>
+            <p class="text-sm text-gray-700">{{ post_adopcion.descripcion }}</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4 text-xs text-gray-500">
+            {% if es_owner %}
+            Este es tu gato.
+            {% else %}
+            Publicado por <span class="font-semibold text-gray-700">{{ gato.owner.username }}</span>
+            {% endif %}
+            {% if post_adopcion %}
+            &middot; en adopción desde {{ post_adopcion.publicado_en|date:"d/m/Y" }}
+            {% endif %}
+        </div>
+
+        <div class="space-y-2">
+            {% if es_owner %}
+            <a href="{% url 'cats:editar_perfil' gato.id %}"
+               class="w-full flex items-center justify-center bg-brandOrange text-white font-semibold py-3 rounded-full shadow-md hover:bg-opacity-90 transition transform active:scale-95">
+                ✏️ Editar
+            </a>
+            {% else %}
+                {% if puede_contactar %}
+                <form method="POST" action="{% url 'chat:iniciar_chat_adopcion' post_adopcion.id %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="w-full bg-brandOrange text-white font-semibold py-3 rounded-full shadow-md hover:bg-opacity-90 transition transform active:scale-95">
+                        💬 Contactar
+                    </button>
+                </form>
+                {% endif %}
+
+                <a href="{% url 'reports:crear_reporte' %}?usuario={{ gato.owner.id }}"
+                   class="w-full flex items-center justify-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold border border-red-200 transition duration-200 shadow-sm">
+                    🚩 Reportar a {{ gato.owner.username }}
+                </a>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+</html>

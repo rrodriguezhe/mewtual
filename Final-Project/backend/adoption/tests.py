@@ -142,54 +142,8 @@ class ListaPublicacionesViewTests(TestCase):
         response = self.client.get(reverse("adoption:lista_publicaciones"))
         self.assertNotContains(response, "Nala")
 
-    def test_card_links_to_detail_page(self):
+    def test_card_links_to_cat_profile_page(self):
         post = AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Cría de Nala en adopción")
         self.client.login(username="alice", password="pass12345")
         response = self.client.get(reverse("adoption:lista_publicaciones"))
-        self.assertContains(response, reverse("adoption:detalle_publicacion", args=[post.id]))
-
-
-class DetallePublicacionViewTests(TestCase):
-
-    def setUp(self):
-        self.alice = User.objects.create_user(username="alice", password="pass12345")
-        self.bob = User.objects.create_user(username="bob", password="pass12345")
-        self.bob_cat = Cat.objects.create(
-            owner=self.bob,
-            nombre="Nala",
-            raza="Bengalí",
-            sexo="F",
-            fecha_nacimiento=datetime.date(2024, 2, 1),
-            peso=3.0,
-            color="Naranja",
-        )
-        self.post = AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Cría de Nala en adopción")
-
-    def detail_url(self):
-        return reverse("adoption:detalle_publicacion", args=[self.post.id])
-
-    def test_nonexistent_post_404s(self):
-        self.client.login(username="alice", password="pass12345")
-        response = self.client.get(reverse("adoption:detalle_publicacion", args=[9999]))
-        self.assertEqual(response.status_code, 404)
-
-    def test_non_owner_sees_contactar_and_reportar(self):
-        self.client.login(username="alice", password="pass12345")
-        response = self.client.get(self.detail_url())
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Contactar")
-        self.assertContains(response, "Reportar")
-
-    def test_owner_does_not_see_contactar_or_reportar(self):
-        self.client.login(username="bob", password="pass12345")
-        response = self.client.get(self.detail_url())
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Contactar")
-        self.assertNotContains(response, "Reportar")
-
-    def test_non_disponible_post_hides_contactar(self):
-        self.post.estado = "ADOPTADA"
-        self.post.save()
-        self.client.login(username="alice", password="pass12345")
-        response = self.client.get(self.detail_url())
-        self.assertNotContains(response, "Contactar")
+        self.assertContains(response, reverse("cats:ver_perfil", args=[self.bob_cat.id]))
