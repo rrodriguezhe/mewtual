@@ -20,6 +20,7 @@ python manage.py makemigrations <app>
 python manage.py test <app>         # run one app's tests, e.g. `python manage.py test cats`
 python manage.py test               # run all tests
 python manage.py createsuperuser
+python manage.py seed_demo_data     # seeds demo users/cats/a match+chat+appointment for local testing
 ```
 
 Database (Postgres, required — settings.py has no fallback/sqlite):
@@ -37,7 +38,7 @@ Note: `requirements.txt` is UTF-16 encoded; editing it with plain-text tools may
 
 Environment: `.env` at `Final-Project/` (sibling to `Final-Project/backend/`, loaded via `BASE_DIR.parent / '.env'` in `config/settings.py`) must define `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`.
 
-Test files are empty Django boilerplate stubs in most apps — `reports` and `adoption` are the exception, each with a real `APITestCase` permission suite (see Architecture below).
+Test files are empty Django boilerplate stubs in `chat` and `appointments` — `cats`, `matching`, `users`, `adoption`, and `reports` each have a real test suite (`TestCase`/`APITestCase`) covering business logic, form validation, ownership, and permissions (99 tests total; see Architecture below).
 
 ## Architecture
 
@@ -48,20 +49,20 @@ Django apps under `Final-Project/backend/`, each following the standard `models.
 - **matching** — `Match` (gato_emisor → gato_receptor, with estado PENDIENTE/ACEPTADO/RECHAZADO). `swipe_view` (`matching/views.py`) is the matchmaking core: it picks the active cat, filters candidates by opposite sex + responsible-breeding eligibility, excludes cats already swiped in either direction, and renders one candidate at a time.
 - **chat** — `Chat` (1:1 with a `Match`) and `Message`. Only unlocked once a `Match` exists.
 - **appointments** — `Appointment`, tied to a `Match`, for scheduling in-person meetups (estado PENDIENTE/ACEPTADA/CANCELADA).
-- **adoption** — `AdoptionPost` tied to a `Cat` (estado DISPONIBLE/RESERVADA/ADOPTADA). Independent of the matching flow. Reads are open to any authenticated user; writes are restricted to the posting cat's owner (or staff) via the `IsGatoOwnerOrStaff` object permission in `adoption/views.py`.
-- **reports** — `Report`, user-to-user (usuario_reportante / usuario_reportado), for moderation. Non-staff users only see reports they filed (`ReportViewSet.get_queryset`); only staff can change a report's `estado` or delete it.
+- **adoption** — `AdoptionPost` tied to a `Cat` (estado DISPONIBLE/RESERVADA/ADOPTADA). Independent of the matching flow. Reads are open to any authenticated user; writes are restricted to the posting cat's owner (or staff) via the `IsGatoOwnerOrStaff` object permission in `adoption/views.py`. Has a template UI (`adoption/template_urls.py`, mounted at bare `adoption/`) to browse open listings, publish/edit/delete your own — separate from the DRF router in `adoption/urls.py`, which stays mounted at `api/adoption/`.
+- **reports** — `Report`, user-to-user (usuario_reportante / usuario_reportado), for moderation. Non-staff users only see reports they filed (`ReportViewSet.get_queryset`); only staff can change a report's `estado` or delete it. Has a template UI (`reports/template_urls.py`, mounted at bare `reports/`) that is deliberately contextual rather than a standalone tab — `reports:crear_reporte` always requires a `?usuario=<id>` target and is only linked from a specific cat/post (e.g. a "Reportar" action on a swipe candidate or an adoption listing), not a free user picker.
 
 Cross-app model dependencies flow one direction: `matching` and `adoption` import `cats.models.Cat`; `chat` and `appointments` import `matching.models.Match`. Keep new cross-app logic following that direction rather than introducing back-references.
 
 ### URL wiring (`config/urls.py`)
 
-Each app is mounted twice in places — once under an `api/<app>/` prefix for DRF routers, and once at a bare `<app>/` prefix for template views — but **not consistently**: the top-level `api/cats/`, `api/users/`, `api/matching/`, `api/chat/` includes are commented out in `config/urls.py`. Only `cats` currently exposes its DRF router internally (mounted at `cats/api/` via `cats/urls.py`), plus `api/appointments/`, `api/adoption/`, and `api/reports/` are live at the top level. Check `config/urls.py` before assuming an app's REST API is reachable.
+Each app is mounted twice in places — once under an `api/<app>/` prefix for DRF routers, and once at a bare `<app>/` prefix for template views — but **not consistently**: the top-level `api/cats/`, `api/users/`, `api/matching/`, `api/chat/` includes are commented out in `config/urls.py`. Instead, `cats`, `matching`, `chat`, and `users` each nest their own DRF router inside their own `urls.py`, included once at the bare `<app>/` prefix — e.g. `MatchViewSet` is reachable at `/matching/matches/`, not `/api/matching/matches/`. `appointments`, `adoption`, and `reports` are the ones actually live under `api/<app>/` at the top level; `adoption` and `reports` are *also* mounted a second time at their bare `<app>/` prefix, but that second mount points at a separate `template_urls.py` (template views only, no router) rather than double-registering the router. Check `config/urls.py` before assuming an app's REST API is reachable — and don't assume a ViewSet is safe just because it isn't under `api/`.
 
 Root path `/` redirects to `users:login`. `LOGIN_URL`, `LOGIN_REDIRECT_URL` (`matching:home`), and `LOGOUT_REDIRECT_URL` are set in `config/settings.py`.
 
 ### Auth model
 
-Plain Django session auth (`django.contrib.auth`), not DRF token/JWT auth — there is no `REST_FRAMEWORK` block in settings. Note this means DRF's default `SessionAuthentication` "succeeds" as `AnonymousUser` for unauthenticated requests, so an `IsAuthenticated` denial comes back as 403, not 401 — see the tests in `reports/tests.py` for the concrete case. Template views use `@login_required`; the hardened ViewSets (`CatViewSet`, `ReportViewSet`, `AdoptionPostViewSet`) scope their queryset/permissions to the request user (owner or staff, depending on the app) — other ViewSets (`MatchViewSet`, `UserViewSet`, `ChatViewSet`, `MessageViewSet`, `AppointmentViewSet`) do not, and return unfiltered querysets.
+Plain Django session auth (`django.contrib.auth`), not DRF token/JWT auth — there is no `REST_FRAMEWORK` block in settings. Note this means DRF's default `SessionAuthentication` "succeeds" as `AnonymousUser` for unauthenticated requests, so an `IsAuthenticated` denial comes back as 403, not 401 — see the tests in `reports/tests.py` for the concrete case. Template views use `@login_required`. Every ViewSet across every app now requires `IsAuthenticated` and scopes its queryset to data the requesting user owns or participates in (`CatViewSet`, `AdoptionPostViewSet`, `ReportViewSet`, `MatchViewSet`, `ChatViewSet`, `MessageViewSet`, `ProfileViewSet`, `BlockViewSet`, `AppointmentViewSet`); `UserViewSet` is read-only. This was previously a real gap — `MatchViewSet`/`UserViewSet`/`ChatViewSet`/`MessageViewSet`/`AppointmentViewSet` had no `permission_classes` at all and were confirmed exploitable by anonymous requests before being locked down. One non-obvious consequence of queryset-scoping instead of (or in addition to) an object-level permission: a non-participant hitting another user's match/chat/profile/block detail URL gets **404**, not 403 — the object simply isn't in their queryset, so DRF's `get_object()` never gets far enough to check object permissions (see the "non_owner"/"non_participant" tests in `matching/tests.py` and `users/tests.py` for the concrete cases).
 
 ### Media
 
