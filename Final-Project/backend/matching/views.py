@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -9,9 +10,30 @@ from .models import Match
 from .serializers import MatchSerializer
 
 
+class IsGatoOwnerOrStaff(permissions.BasePermission):
+    """Solo el dueño de alguno de los gatos del match (o un miembro del staff) puede modificarlo."""
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return (
+            request.user.is_staff
+            or obj.gato_emisor.owner_id == request.user.id
+            or obj.gato_receptor.owner_id == request.user.id
+        )
+
+
 class MatchViewSet(viewsets.ModelViewSet):
-    queryset = Match.objects.all()
     serializer_class = MatchSerializer
+    permission_classes = [permissions.IsAuthenticated, IsGatoOwnerOrStaff]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Match.objects.all()
+        return Match.objects.filter(
+            Q(gato_emisor__owner=user) | Q(gato_receptor__owner=user)
+        )
 
 
 @login_required

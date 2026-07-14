@@ -7,7 +7,8 @@ router = DefaultRouter()
 
 router.register(
     r"appointments",
-    AppointmentViewSet
+    AppointmentViewSet,
+    basename="appointment"
 )
 
 urlpatterns = [
