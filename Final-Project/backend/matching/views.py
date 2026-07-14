@@ -108,6 +108,8 @@ def swipe_view(request):
         id__in=gatos_con_vacuna_vigente
     ).filter(
         id__in=gatos_con_certificado
+    ).filter(
+        owner__is_active=True
     ).exclude(
         owner=request.user
     ).exclude(

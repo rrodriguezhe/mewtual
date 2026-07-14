@@ -7,6 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
 from .models import Profile, Block
 from .forms import AccountNameForm, ProfilePictureForm
 from .serializers import (
@@ -165,3 +166,24 @@ def mi_cuenta_view(request):
         'picture_form': picture_form,
         'profile': profile,
     })
+
+
+@login_required
+@require_POST
+def eliminar_cuenta_view(request):
+    password = request.POST.get('password', '')
+    if not request.user.check_password(password):
+        messages.error(request, "Contraseña incorrecta. Tu cuenta no fue eliminada.")
+        return redirect('users:mi_cuenta')
+
+    user = request.user
+    user.is_active = False
+    user.save()
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+    profile.estado_cuenta = "ELIMINADA"
+    profile.save()
+
+    logout(request)
+    messages.success(request, "Tu cuenta fue eliminada. ¡Esperamos verte de nuevo pronto!")
+    return redirect('users:login')
