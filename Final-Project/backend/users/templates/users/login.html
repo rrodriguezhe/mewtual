@@ -21,11 +21,14 @@
 <body class="bg-gray-100 flex justify-center items-center min-h-screen font-sans">
     <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col justify-between p-8 relative">
         
+        {% load static %}
+
         <div class="text-center mt-12">
-            <div class="bg-brandOrange w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-md mb-4">
-                <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
+            <div class="bg-brandOrange w-24 h-24 rounded-full overflow-hidden mx-auto shadow-md mb-4">
+                <img 
+                    src="{% static 'users/Logo_Mewtual.png' %}" 
+                    class="w-full h-full object-cover"
+                >
             </div>
             <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Mewtual</h1>
             <p class="text-gray-500 text-sm mt-2">Encuentra la pareja perfecta para tu gato</p>
