@@ -114,7 +114,7 @@ def enviar_mensaje(request, chat_id):
 def mensajes_nuevos(request, chat_id):
     """Usado por polling en el front para traer mensajes despues de cierto id."""
     chat = get_object_or_404(_chats_de_usuario(request.user), id=chat_id)
-    desde_id = request.GET.get("desde_id", 0)
+    desde_id = int(request.GET.get("desde_id", 0))
 
     mensajes = chat.message_set.filter(id__gt=desde_id).order_by("fecha_envio")
 
