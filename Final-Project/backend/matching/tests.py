@@ -97,6 +97,14 @@ class SwipeViewCandidateTests(TestCase):
         response = self.client.get(SWIPE_URL)
         self.assertEqual(response.context["candidato"], bob_cat)
 
+    def test_candidate_links_to_cat_profile_with_gato_activo(self):
+        alice_cat = _make_apto_cat(self.alice, "M", "Simba")
+        bob_cat = _make_apto_cat(self.bob, "F", "Luna")
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(SWIPE_URL)
+        expected_url = f"{reverse('cats:ver_perfil', args=[bob_cat.id])}?gato_activo={alice_cat.id}"
+        self.assertContains(response, expected_url)
+
     def test_candidate_excludes_inactive_owner(self):
         _make_apto_cat(self.alice, "M", "Simba")
         _make_apto_cat(self.bob, "F", "Luna")

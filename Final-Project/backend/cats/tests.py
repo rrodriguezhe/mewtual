@@ -292,6 +292,38 @@ class VerPerfilViewTests(TestCase):
         response = self.client.get(self.detail_url())
         self.assertNotContains(response, "Contactar")
 
+    def test_non_owner_with_valid_gato_activo_sees_swipe_buttons(self):
+        alice_cat = _make_cat(self.alice, "M", "Simba")
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url(), {"gato_activo": alice_cat.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("matching:swipe_like", args=[self.bob_cat.pk]))
+        self.assertContains(response, reverse("matching:swipe_rechazar", args=[self.bob_cat.pk]))
+        self.assertContains(response, "Reportar")
+        self.assertNotContains(response, "Contactar")
+
+    def test_gato_activo_not_owned_by_viewer_is_ignored(self):
+        carol = User.objects.create_user(username="carol", password="pass12345")
+        carol_cat = _make_cat(carol, "M", "Milo")
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url(), {"gato_activo": carol_cat.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, reverse("matching:swipe_like", args=[self.bob_cat.pk]))
+
+    def test_invalid_gato_activo_param_does_not_crash(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.detail_url(), {"gato_activo": "abc"})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, reverse("matching:swipe_like", args=[self.bob_cat.pk]))
+
+    def test_owner_viewing_own_cat_ignores_gato_activo(self):
+        bob_other_cat = _make_cat(self.bob, "M", "Toby")
+        self.client.login(username="bob", password="pass12345")
+        response = self.client.get(self.detail_url(), {"gato_activo": bob_other_cat.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Editar")
+        self.assertNotContains(response, reverse("matching:swipe_like", args=[self.bob_cat.pk]))
+
 
 class CatViewSetAPITests(APITestCase):
 

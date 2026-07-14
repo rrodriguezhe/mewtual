@@ -37,12 +37,14 @@
         <div class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden flex flex-col relative mb-4">
             
             <div class="relative w-full h-64 bg-gray-200">
-                {% if candidato.foto %}
-                <img src="{{ candidato.foto.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
-                {% else %}
-                <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
-                {% endif %}
-                
+                <a href="{% url 'cats:ver_perfil' candidato.id %}?gato_activo={{ gato_activo.id }}" class="block w-full h-full">
+                    {% if candidato.foto %}
+                    <img src="{{ candidato.foto.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
+                    {% endif %}
+                </a>
+
                 <span class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brandGreen font-semibold text-xs px-3 py-1 rounded-full flex items-center shadow-sm">
                     <span class="w-2 h-2 bg-brandGreen rounded-full inline-block mr-1.5"></span> Vacunado
                 </span>
@@ -54,7 +56,7 @@
             </div>
 
             <div class="p-5 flex-1 flex flex-col justify-between">
-                <div>
+                <a href="{% url 'cats:ver_perfil' candidato.id %}?gato_activo={{ gato_activo.id }}">
                     <div class="flex items-baseline space-x-2">
                         <h2 class="text-2xl font-bold text-gray-800">{{ candidato.nombre }}</h2>
                         <span class="text-lg text-gray-500 font-medium">{{ candidato_edad }} año{{ candidato_edad|pluralize }}</span>
@@ -63,7 +65,7 @@
                     <p class="text-gray-600 text-sm mt-3 leading-relaxed">
                         {{ candidato.gustos_preferencias|default:"Sin descripción." }}
                     </p>
-                </div>
+                </a>
 
                 <div class="flex justify-center space-x-6 mt-4">
                     <form method="POST" action="{% url 'matching:swipe_rechazar' candidato.id %}" class="contents">

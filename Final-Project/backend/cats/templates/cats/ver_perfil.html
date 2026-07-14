@@ -80,7 +80,26 @@
                 ✏️ Editar
             </a>
             {% else %}
-                {% if puede_contactar %}
+                {% if puede_swipe %}
+                <div class="flex justify-center gap-6">
+                    <form method="POST" action="{% url 'matching:swipe_rechazar' gato.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="gato_id" value="{{ gato_activo.id }}">
+                        <button type="submit"
+                                class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-gray-400 font-bold text-xl shadow-md border border-gray-100 hover:text-red-500 hover:scale-105 active:scale-95 transition">
+                            X
+                        </button>
+                    </form>
+                    <form method="POST" action="{% url 'matching:swipe_like' gato.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="gato_id" value="{{ gato_activo.id }}">
+                        <button type="submit"
+                                class="w-14 h-14 bg-brandOrange rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg hover:bg-opacity-90 hover:scale-105 active:scale-95 transition">
+                            ♥
+                        </button>
+                    </form>
+                </div>
+                {% elif puede_contactar %}
                 <form method="POST" action="{% url 'chat:iniciar_chat_adopcion' post_adopcion.id %}">
                     {% csrf_token %}
                     <button type="submit"
