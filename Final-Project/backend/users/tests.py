@@ -1,15 +1,39 @@
+import io
+import os
 import re
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import Block, Profile
+
+
+def _make_valid_png(name="foto.png", content_type="image/png"):
+    """Imagen PNG pequeña y válida (Pillow) para tests de subida."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (10, 10), color="red").save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
+
+
+def _make_oversized_png(name="foto_grande.png", content_type="image/png"):
+    """
+    PNG real (Pillow lo puede abrir) pero de ruido aleatorio sin comprimir,
+    para garantizar que supere el límite de 5 MB sin depender de relleno
+    de bytes que Pillow podría rechazar al parsear.
+    """
+    buffer = io.BytesIO()
+    width, height = 1400, 1400
+    img = Image.frombytes("RGB", (width, height), os.urandom(width * height * 3))
+    img.save(buffer, format="PNG", compress_level=0)
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
 
 USERS_API_URL = "/users/users/"
 PROFILES_API_URL = "/users/profiles/"
@@ -156,6 +180,74 @@ class MiCuentaViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "alice")
         self.assertContains(response, "alice@example.com")
+
+    def test_get_prefills_form_with_current_values(self):
+        self.user.first_name = "Ana"
+        self.user.last_name = "Perez"
+        self.user.save()
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.get(reverse("users:mi_cuenta"))
+        self.assertContains(response, 'value="Ana"')
+        self.assertContains(response, 'value="Perez"')
+
+    def test_post_updates_name(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.post(reverse("users:mi_cuenta"), {
+            "first_name": "Ana",
+            "last_name": "Perez",
+        })
+        self.assertRedirects(response, reverse("users:mi_cuenta"))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Ana")
+        self.assertEqual(self.user.last_name, "Perez")
+
+    def test_post_updates_profile_picture(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.post(reverse("users:mi_cuenta"), {
+            "first_name": "",
+            "last_name": "",
+            "foto_perfil": _make_valid_png(),
+        })
+        self.assertRedirects(response, reverse("users:mi_cuenta"))
+        profile = Profile.objects.get(user=self.user)
+        self.assertTrue(bool(profile.foto_perfil))
+
+    def test_post_rejects_oversized_image(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.post(reverse("users:mi_cuenta"), {
+            "first_name": "",
+            "last_name": "",
+            "foto_perfil": _make_oversized_png(),
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "no puede superar 5 MB")
+        profile = Profile.objects.get(user=self.user)
+        self.assertFalse(bool(profile.foto_perfil))
+
+    def test_post_rejects_invalid_content_type(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        bad_file = SimpleUploadedFile(
+            "foto.txt", b"no es una imagen", content_type="text/plain"
+        )
+        response = self.client.post(reverse("users:mi_cuenta"), {
+            "first_name": "",
+            "last_name": "",
+            "foto_perfil": bad_file,
+        })
+        self.assertEqual(response.status_code, 200)
+        profile = Profile.objects.get(user=self.user)
+        self.assertFalse(bool(profile.foto_perfil))
+
+    def test_staff_without_profile_can_load_mi_cuenta(self):
+        staff_user = User.objects.create_user(
+            username="staffer", email="staff@example.com",
+            password="StrongPass123!", is_staff=True,
+        )
+        self.assertFalse(Profile.objects.filter(user=staff_user).exists())
+        self.client.login(username="staffer", password="StrongPass123!")
+        response = self.client.get(reverse("users:mi_cuenta"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Profile.objects.filter(user=staff_user).exists())
 
 
 class PasswordResetFlowTests(TestCase):
