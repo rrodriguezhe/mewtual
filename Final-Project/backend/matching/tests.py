@@ -9,11 +9,16 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from cats.models import Cat, MedicalRecord, Vaccine
+from chat.models import Chat
 
 from .models import Match
 
 SWIPE_URL = "/matching/swipe/"
 MATCHES_URL = "/matching/matches/"
+
+
+def _swipe_url(candidato_id, decision):
+    return f"/matching/swipe/{candidato_id}/{decision}/"
 
 
 def _make_apto_cat(owner, sexo="M", nombre="Gato"):
@@ -217,3 +222,77 @@ class MatchViewSetAPITests(APITestCase):
         self.assertEqual(len(response.data), 1)
         response = self.client.patch(self.detail_url(self.match), {"estado": "RECHAZADO"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class RegistrarSwipeViewTests(TestCase):
+
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="pass12345")
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.alice_cat = _make_apto_cat(self.alice, "M", "Simba")
+        self.bob_cat = _make_apto_cat(self.bob, "F", "Luna")
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.post(_swipe_url(self.bob_cat.id, "like"), {"gato_id": self.alice_cat.id})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_get_not_allowed(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(_swipe_url(self.bob_cat.id, "like"))
+        self.assertEqual(response.status_code, 405)
+
+    def test_like_with_no_incoming_match_creates_pending_match(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(
+            _swipe_url(self.bob_cat.id, "like"), {"gato_id": self.alice_cat.id}
+        )
+        match = Match.objects.get(gato_emisor=self.alice_cat, gato_receptor=self.bob_cat)
+        self.assertEqual(match.estado, "PENDIENTE")
+        self.assertFalse(Chat.objects.filter(match=match).exists())
+        self.assertRedirects(
+            response, f"{reverse('matching:swipe')}?gato_id={self.alice_cat.id}"
+        )
+
+    def test_like_with_incoming_pending_match_becomes_mutual(self):
+        match_entrante = Match.objects.create(
+            gato_emisor=self.bob_cat, gato_receptor=self.alice_cat, estado="PENDIENTE"
+        )
+        self.client.login(username="alice", password="pass12345")
+        self.client.post(_swipe_url(self.bob_cat.id, "like"), {"gato_id": self.alice_cat.id})
+        match_entrante.refresh_from_db()
+        self.assertEqual(match_entrante.estado, "ACEPTADO")
+        self.assertTrue(Chat.objects.filter(match=match_entrante).exists())
+
+    def test_rechazar_with_no_incoming_match_creates_rechazado_match(self):
+        self.client.login(username="alice", password="pass12345")
+        self.client.post(_swipe_url(self.bob_cat.id, "rechazar"), {"gato_id": self.alice_cat.id})
+        match = Match.objects.get(gato_emisor=self.alice_cat, gato_receptor=self.bob_cat)
+        self.assertEqual(match.estado, "RECHAZADO")
+
+    def test_rechazar_with_incoming_pending_match_marks_it_rechazado(self):
+        match_entrante = Match.objects.create(
+            gato_emisor=self.bob_cat, gato_receptor=self.alice_cat, estado="PENDIENTE"
+        )
+        self.client.login(username="alice", password="pass12345")
+        self.client.post(_swipe_url(self.bob_cat.id, "rechazar"), {"gato_id": self.alice_cat.id})
+        match_entrante.refresh_from_db()
+        self.assertEqual(match_entrante.estado, "RECHAZADO")
+        self.assertFalse(Chat.objects.filter(match=match_entrante).exists())
+
+    def test_gato_id_belonging_to_another_user_404s(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(
+            _swipe_url(self.alice_cat.id, "like"), {"gato_id": self.bob_cat.id}
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_double_submit_like_is_idempotent(self):
+        self.client.login(username="alice", password="pass12345")
+        self.client.post(_swipe_url(self.bob_cat.id, "like"), {"gato_id": self.alice_cat.id})
+        self.client.post(_swipe_url(self.bob_cat.id, "like"), {"gato_id": self.alice_cat.id})
+        self.assertEqual(
+            Match.objects.filter(gato_emisor=self.alice_cat, gato_receptor=self.bob_cat).count(),
+            1
+        )

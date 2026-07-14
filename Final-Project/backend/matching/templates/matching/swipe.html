@@ -66,12 +66,20 @@
                 </div>
 
                 <div class="flex justify-center space-x-6 mt-4">
-                    <button class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-gray-400 font-bold text-xl shadow-md border border-gray-100 hover:text-red-500 hover:scale-105 active:scale-95 transition" onclick="alert('Funcionalidad de Swipe (Opción 2) no implementada todavía en el frontend.')">
-                        X
-                    </button>
-                    <button class="w-14 h-14 bg-brandOrange rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg hover:bg-opacity-90 hover:scale-105 active:scale-95 transition" onclick="alert('Funcionalidad de Swipe (Opción 2) no implementada todavía en el frontend.')">
-                        ♥
-                    </button>
+                    <form method="POST" action="{% url 'matching:swipe_rechazar' candidato.id %}" class="contents">
+                        {% csrf_token %}
+                        <input type="hidden" name="gato_id" value="{{ gato_activo.id }}">
+                        <button type="submit" class="w-14 h-14 bg-white rounded-full flex items-center justify-center text-gray-400 font-bold text-xl shadow-md border border-gray-100 hover:text-red-500 hover:scale-105 active:scale-95 transition">
+                            X
+                        </button>
+                    </form>
+                    <form method="POST" action="{% url 'matching:swipe_like' candidato.id %}" class="contents">
+                        {% csrf_token %}
+                        <input type="hidden" name="gato_id" value="{{ gato_activo.id }}">
+                        <button type="submit" class="w-14 h-14 bg-brandOrange rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg hover:bg-opacity-90 hover:scale-105 active:scale-95 transition">
+                            ♥
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
