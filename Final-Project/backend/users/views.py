@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
 from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth.models import User
@@ -14,19 +14,47 @@ from .serializers import (
 )
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Solo lectura: la creación de usuarios pasa por register_view y la
+    edición/eliminación por el admin de Django, no por esta API.
+    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class IsProfileOwnerOrStaff(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_staff or obj.user_id == request.user.id
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProfileOwnerOrStaff]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Profile.objects.all()
+        return Profile.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class BlockViewSet(viewsets.ModelViewSet):
-    queryset = Block.objects.all()
     serializer_class = BlockSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Block.objects.filter(usuario_bloqueador=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario_bloqueador=self.request.user)
 
 
 def login_view(request):

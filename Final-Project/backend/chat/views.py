@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
+from django.db.models import Q
 from django.shortcuts import render
 from .models import Chat, Message
 from .serializers import (
@@ -9,13 +10,28 @@ from django.contrib.auth.decorators import login_required
 
 
 class ChatViewSet(viewsets.ModelViewSet):
-    queryset = Chat.objects.all()
     serializer_class = ChatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Chat.objects.filter(
+            Q(match__gato_emisor__owner=user) | Q(match__gato_receptor__owner=user)
+        )
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Message.objects.filter(
+            Q(chat__match__gato_emisor__owner=user) | Q(chat__match__gato_receptor__owner=user)
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(remitente=self.request.user)
 
 
 @login_required

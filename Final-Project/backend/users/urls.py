@@ -11,8 +11,8 @@ from .views import (
 router = DefaultRouter()
 
 router.register(r'users', UserViewSet)
-router.register(r'profiles', ProfileViewSet)
-router.register(r'blocks', BlockViewSet)
+router.register(r'profiles', ProfileViewSet, basename='profile')
+router.register(r'blocks', BlockViewSet, basename='block')
 
 app_name = 'users'
 

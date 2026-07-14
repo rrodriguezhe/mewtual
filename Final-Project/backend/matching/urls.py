@@ -7,7 +7,8 @@ router = DefaultRouter()
 
 router.register(
     r"matches",
-    MatchViewSet
+    MatchViewSet,
+    basename="match"
 )
 
 app_name = 'matching'

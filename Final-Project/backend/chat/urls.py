@@ -10,12 +10,14 @@ router = DefaultRouter()
 
 router.register(
     r"chats",
-    ChatViewSet
+    ChatViewSet,
+    basename="chat"
 )
 
 router.register(
     r"messages",
-    MessageViewSet
+    MessageViewSet,
+    basename="message"
 )
 
 app_name = 'chat'
