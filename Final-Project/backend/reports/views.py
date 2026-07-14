@@ -56,7 +56,7 @@ def crear_reporte(request):
         target_user = get_object_or_404(User, pk=usuario_id) if usuario_id else None
         if target_user is None or target_user == request.user:
             messages.error(request, "Selecciona un usuario válido para reportar.")
-            return redirect("matching:home")
+            return redirect("matching:swipe")
         form = ReportForm(user=request.user, initial={"usuario_reportado": target_user.pk})
 
     return render(request, "reports/crear_reporte.html", {"form": form, "target_user": target_user})

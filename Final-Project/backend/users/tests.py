@@ -22,14 +22,19 @@ class LoginViewTests(TestCase):
         response = self.client.post(reverse("users:login"), {
             "email": "alice", "password": "StrongPass123!",
         })
-        self.assertRedirects(response, reverse("matching:home"))
+        # No assertRedirects here: swipe_view itself redirects again for a
+        # cat-less user, so we only check login's own target, not that
+        # target's response.
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("matching:swipe"))
         self.assertTrue(response.wsgi_request.user.is_authenticated)
 
     def test_login_with_email_and_correct_password(self):
         response = self.client.post(reverse("users:login"), {
             "email": "alice@example.com", "password": "StrongPass123!",
         })
-        self.assertRedirects(response, reverse("matching:home"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("matching:swipe"))
         self.assertTrue(response.wsgi_request.user.is_authenticated)
 
     def test_login_with_incorrect_password(self):
@@ -75,7 +80,8 @@ class RegisterViewTests(TestCase):
 
     def test_register_logs_in_after_success(self):
         response = self.client.post(reverse("users:register"), self._valid_payload())
-        self.assertRedirects(response, reverse("matching:home"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("matching:swipe"))
         self.assertTrue(response.wsgi_request.user.is_authenticated)
         self.assertEqual(response.wsgi_request.user.username, "bob")
 
