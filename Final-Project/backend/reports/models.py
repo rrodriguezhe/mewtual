@@ -34,3 +34,6 @@ class Report(models.Model):
     fecha_reporte = models.DateTimeField(
         auto_now_add=True
     )
+
+    def __str__(self):
+        return f"{self.usuario_reportante} -> {self.usuario_reportado} ({self.estado})"
