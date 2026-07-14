@@ -1,6 +1,11 @@
+import re
+
 from django.contrib.auth.models import User
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -151,6 +156,55 @@ class MiCuentaViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "alice")
         self.assertContains(response, "alice@example.com")
+
+
+class PasswordResetFlowTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="alice", email="alice@example.com", password="OldPass123!"
+        )
+
+    def test_request_reset_for_real_email_sends_one_message(self):
+        response = self.client.post(reverse("users:password_reset"), {"email": "alice@example.com"})
+        self.assertRedirects(response, reverse("users:password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("alice@example.com", mail.outbox[0].to)
+
+    def test_request_reset_for_unknown_email_sends_nothing_but_still_succeeds(self):
+        # Django deliberately doesn't reveal whether an email is registered.
+        response = self.client.post(reverse("users:password_reset"), {"email": "nadie@example.com"})
+        self.assertRedirects(response, reverse("users:password_reset_done"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_following_emailed_link_and_setting_new_password_works(self):
+        self.client.post(reverse("users:password_reset"), {"email": "alice@example.com"})
+        body = mail.outbox[0].body
+        match = re.search(r"(/users/password-reset/confirm/\S+/\S+/)", body)
+        self.assertIsNotNone(match)
+        confirm_url = match.group(1)
+
+        response = self.client.get(confirm_url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        set_password_url = response.redirect_chain[-1][0]
+
+        response = self.client.post(set_password_url, {
+            "new_password1": "BrandNewPass456!",
+            "new_password2": "BrandNewPass456!",
+        })
+        self.assertRedirects(response, reverse("users:password_reset_complete"))
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("BrandNewPass456!"))
+        self.assertFalse(self.user.check_password("OldPass123!"))
+
+    def test_invalid_token_shows_invalid_link_state(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        response = self.client.get(
+            reverse("users:password_reset_confirm", kwargs={"uidb64": uid, "token": "bogus-token"}),
+            follow=True,
+        )
+        self.assertContains(response, "ya no es válido")
 
 
 class UserViewSetAPITests(APITestCase):

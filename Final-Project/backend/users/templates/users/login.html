@@ -58,7 +58,7 @@
                 <input type="password" name="password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:border-brandOrange bg-white shadow-sm transition">
             </div>
             <div class="text-right">
-                <a href="#" class="text-xs text-gray-400 hover:underline">¿Olvidaste tu contraseña?</a>
+                <a href="{% url 'users:password_reset' %}" class="text-xs text-gray-400 hover:underline">¿Olvidaste tu contraseña?</a>
             </div>
             
             <button type="submit" class="w-full bg-brandOrange text-white font-semibold py-3.5 rounded-full shadow-md hover:bg-opacity-90 transition transform active:scale-95 mt-4 block text-center">
