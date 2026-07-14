@@ -1,6 +1,8 @@
 import datetime
 
 from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -109,3 +111,33 @@ class AdoptionPostPermissionTests(APITestCase):
         self.client.force_authenticate(self.staff)
         response = self.client.delete(self.detail_url(self.alice_post))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class ListaPublicacionesViewTests(TestCase):
+
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="pass12345")
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.bob_cat = Cat.objects.create(
+            owner=self.bob,
+            nombre="Nala",
+            raza="Bengalí",
+            sexo="F",
+            fecha_nacimiento=datetime.date(2024, 2, 1),
+            peso=3.0,
+            color="Naranja",
+        )
+
+    def test_post_from_active_owner_is_listed(self):
+        AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Cría de Nala en adopción")
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(reverse("adoption:lista_publicaciones"))
+        self.assertContains(response, "Nala")
+
+    def test_post_from_inactive_owner_is_excluded(self):
+        AdoptionPost.objects.create(gato=self.bob_cat, descripcion="Cría de Nala en adopción")
+        self.bob.is_active = False
+        self.bob.save()
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(reverse("adoption:lista_publicaciones"))
+        self.assertNotContains(response, "Nala")

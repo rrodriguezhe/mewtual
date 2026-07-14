@@ -250,6 +250,50 @@ class MiCuentaViewTests(TestCase):
         self.assertTrue(Profile.objects.filter(user=staff_user).exists())
 
 
+class EliminarCuentaViewTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="alice", email="alice@example.com", password="StrongPass123!"
+        )
+
+    def test_get_not_allowed(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.get(reverse("users:eliminar_cuenta"))
+        self.assertEqual(response.status_code, 405)
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.post(reverse("users:eliminar_cuenta"), {"password": "x"})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_wrong_password_does_not_deactivate(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.post(reverse("users:eliminar_cuenta"), {"password": "wrong"})
+        self.assertRedirects(response, reverse("users:mi_cuenta"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_correct_password_deactivates_and_logs_out(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        response = self.client.post(
+            reverse("users:eliminar_cuenta"), {"password": "StrongPass123!"}
+        )
+        self.assertRedirects(response, reverse("users:login"))
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        profile = Profile.objects.get(user=self.user)
+        self.assertEqual(profile.estado_cuenta, "ELIMINADA")
+
+    def test_deactivated_user_cannot_login(self):
+        self.client.login(username="alice", password="StrongPass123!")
+        self.client.post(reverse("users:eliminar_cuenta"), {"password": "StrongPass123!"})
+        response = self.client.post(reverse("users:login"), {
+            "email": "alice", "password": "StrongPass123!",
+        })
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+
 class PasswordResetFlowTests(TestCase):
 
     def setUp(self):

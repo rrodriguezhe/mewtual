@@ -33,7 +33,8 @@ class AdoptionPostViewSet(viewsets.ModelViewSet):
 def lista_publicaciones(request):
     """Publicaciones de adopción disponibles de otros usuarios."""
     publicaciones = AdoptionPost.objects.filter(
-        estado="DISPONIBLE"
+        estado="DISPONIBLE",
+        gato__owner__is_active=True
     ).exclude(
         gato__owner=request.user
     ).select_related("gato", "gato__owner").order_by("-publicado_en")

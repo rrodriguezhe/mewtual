@@ -23,6 +23,7 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
     path('cuenta/', views.mi_cuenta_view, name='mi_cuenta'),
+    path('cuenta/eliminar/', views.eliminar_cuenta_view, name='eliminar_cuenta'),
 
     path('password-reset/', auth_views.PasswordResetView.as_view(
         template_name='users/password_reset.html',

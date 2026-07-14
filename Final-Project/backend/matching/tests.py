@@ -97,6 +97,15 @@ class SwipeViewCandidateTests(TestCase):
         response = self.client.get(SWIPE_URL)
         self.assertEqual(response.context["candidato"], bob_cat)
 
+    def test_candidate_excludes_inactive_owner(self):
+        _make_apto_cat(self.alice, "M", "Simba")
+        _make_apto_cat(self.bob, "F", "Luna")
+        self.bob.is_active = False
+        self.bob.save()
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(SWIPE_URL)
+        self.assertIsNone(response.context["candidato"])
+
     def test_excludes_cat_already_swiped_as_emisor(self):
         alice_cat = _make_apto_cat(self.alice, "M", "Simba")
         bob_cat = _make_apto_cat(self.bob, "F", "Luna")

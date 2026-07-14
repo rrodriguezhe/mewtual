@@ -84,6 +84,37 @@
             </button>
         </form>
 
+        <!-- ── Zona de peligro: eliminar cuenta ── -->
+        <div class="mt-4">
+            <button type="button" id="eliminar-cuenta-toggle"
+                    class="w-full bg-red-600 text-white font-semibold py-2.5 rounded-xl shadow-sm hover:bg-red-700 transition transform active:scale-95">
+                Eliminar cuenta
+            </button>
+
+            <div id="eliminar-cuenta-panel" class="hidden mt-3 bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
+                <p class="text-xs text-red-700">
+                    Tu cuenta será desactivada, no podrás iniciar sesión, y tus gatos
+                    dejarán de mostrarse a otros usuarios. Un administrador puede
+                    reactivarla si cambias de opinión.
+                </p>
+                <form method="POST" action="{% url 'users:eliminar_cuenta' %}" class="space-y-2">
+                    {% csrf_token %}
+                    <input type="password" name="password" required placeholder="Confirma tu contraseña"
+                           class="w-full px-4 py-2.5 rounded-xl border border-red-200 focus:outline-none focus:border-red-500 bg-white shadow-sm">
+                    <div class="flex gap-2">
+                        <button type="button" id="eliminar-cuenta-cancelar"
+                                class="flex-1 bg-white text-gray-600 font-semibold py-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="flex-1 bg-red-600 text-white font-semibold py-2 rounded-xl hover:bg-red-700 transition">
+                            Confirmar eliminación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <a href="{% url 'users:logout' %}"
            class="flex items-center justify-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold border border-red-200 transition duration-200 shadow-sm transform active:scale-95 mt-4"
            title="Cerrar sesión">
@@ -130,6 +161,17 @@
                 };
                 reader.readAsDataURL(file);
             });
+        }
+
+        // ── Panel de confirmación para eliminar cuenta ──
+        const eliminarToggle = document.getElementById('eliminar-cuenta-toggle');
+        const eliminarPanel = document.getElementById('eliminar-cuenta-panel');
+        const eliminarCancelar = document.getElementById('eliminar-cuenta-cancelar');
+        if (eliminarToggle && eliminarPanel) {
+            eliminarToggle.addEventListener('click', () => eliminarPanel.classList.remove('hidden'));
+        }
+        if (eliminarCancelar && eliminarPanel) {
+            eliminarCancelar.addEventListener('click', () => eliminarPanel.classList.add('hidden'));
         }
     </script>
 </body>
