@@ -76,7 +76,7 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect('matching:home')
+            return redirect('matching:swipe')
         else:
             messages.error(request, "Correo electrónico o contraseña incorrectos.")
             return render(request, 'users/login.html')

@@ -58,7 +58,7 @@ Cross-app model dependencies flow one direction: `matching` and `adoption` impor
 
 Each app is mounted twice in places — once under an `api/<app>/` prefix for DRF routers, and once at a bare `<app>/` prefix for template views — but **not consistently**: the top-level `api/cats/`, `api/users/`, `api/matching/`, `api/chat/` includes are commented out in `config/urls.py`. Instead, `cats`, `matching`, `chat`, and `users` each nest their own DRF router inside their own `urls.py`, included once at the bare `<app>/` prefix — e.g. `MatchViewSet` is reachable at `/matching/matches/`, not `/api/matching/matches/`. `appointments`, `adoption`, and `reports` are the ones actually live under `api/<app>/` at the top level; `adoption` and `reports` are *also* mounted a second time at their bare `<app>/` prefix, but that second mount points at a separate `template_urls.py` (template views only, no router) rather than double-registering the router. Check `config/urls.py` before assuming an app's REST API is reachable — and don't assume a ViewSet is safe just because it isn't under `api/`.
 
-Root path `/` redirects to `users:login`. `LOGIN_URL`, `LOGIN_REDIRECT_URL` (`matching:home`), and `LOGOUT_REDIRECT_URL` are set in `config/settings.py`.
+Root path `/` redirects to `users:login`. `LOGIN_URL`, `LOGIN_REDIRECT_URL` (`matching:swipe`), and `LOGOUT_REDIRECT_URL` are set in `config/settings.py`. There is no "Inicio"/home tab — `matching:home` (a dashboard view) still exists and works but isn't linked from any nav bar or redirect; `matching:swipe` is the de facto landing page after login.
 
 ### Auth model
 
