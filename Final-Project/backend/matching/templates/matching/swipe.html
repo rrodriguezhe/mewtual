@@ -37,12 +37,14 @@
         <div class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden flex flex-col relative mb-4">
             
             <div class="relative w-full h-64 bg-gray-200">
-                {% if candidato.foto %}
-                <img src="{{ candidato.foto.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
-                {% else %}
-                <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
-                {% endif %}
-                
+                <a href="{% url 'cats:ver_perfil' candidato.id %}?gato_activo={{ gato_activo.id }}" class="block w-full h-full">
+                    {% if candidato.foto %}
+                    <img src="{{ candidato.foto.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
+                    {% endif %}
+                </a>
+
                 <span class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-brandGreen font-semibold text-xs px-3 py-1 rounded-full flex items-center shadow-sm">
                     <span class="w-2 h-2 bg-brandGreen rounded-full inline-block mr-1.5"></span> Vacunado
                 </span>
