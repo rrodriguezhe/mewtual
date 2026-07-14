@@ -143,6 +143,16 @@ class CatFormValidationTests(TestCase):
         })
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_cat_form_renders_fecha_nacimiento_in_iso_format_for_date_input(self):
+        # Bug regression: with LANGUAGE_CODE='es', DateInput renders bound
+        # values as "d/m/Y" (e.g. "15/05/2022") unless format is pinned to
+        # ISO. <input type="date"> only recognizes "Y-m-d" and silently
+        # shows an empty field otherwise, which reads as the date getting
+        # wiped out every time the cat is edited.
+        cat = _make_cat(User.objects.create_user(username="carol", password="pass12345"))
+        form = CatForm(instance=cat)
+        self.assertIn(cat.fecha_nacimiento.isoformat(), str(form["fecha_nacimiento"]))
+
     def test_cat_form_rejects_future_fecha_nacimiento(self):
         manana = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
         form = CatForm(data={
