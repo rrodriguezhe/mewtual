@@ -48,6 +48,7 @@ class CatForm(forms.ModelForm):
                 attrs={"class": "sexo-radio"}
             ),
             "fecha_nacimiento": forms.DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date",
                     "class": "w-full px-4 py-2.5 rounded-xl border border-gray-100 "
