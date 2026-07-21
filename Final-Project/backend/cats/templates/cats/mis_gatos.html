@@ -57,8 +57,7 @@
             {% if gatos %}
                 {% for item in gatos %}
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="flex items-center space-x-4">
-
+                    <a href="{% url 'cats:ver_perfil' item.obj.pk %}" class="flex items-center space-x-4">
                         <!-- Foto -->
                         {% if item.obj.foto %}
                         <img src="{{ item.obj.foto.url }}"
@@ -111,17 +110,7 @@
                             </div>
                             {% endif %}
                         </div>
-
-                        <!-- Acciones -->
-                        <div class="flex flex-col gap-1 ml-1">
-                            <a href="{% url 'cats:editar_perfil' item.obj.pk %}"
-                               class="text-xs text-gray-400 hover:text-brandOrange transition px-2 py-1 rounded-lg hover:bg-orange-50"
-                               title="Editar">✏️</a>
-                            <a href="{% url 'cats:eliminar_perfil' item.obj.pk %}"
-                               class="text-xs text-gray-400 hover:text-red-400 transition px-2 py-1 rounded-lg hover:bg-red-50"
-                               title="Eliminar">🗑️</a>
-                        </div>
-                    </div>
+                    </a>
                 </div>
                 {% endfor %}
 
@@ -142,11 +131,11 @@
 
         <!-- Barra de navegación -->
         <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 flex justify-around items-center shadow-lg rounded-t-2xl">
-            <a href="{% url 'matching:home' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Inicio</span>
-            </a>
             <a href="{% url 'matching:swipe' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
                 <span class="text-xs font-medium">Match</span>
+            </a>
+            <a href="{% url 'adoption:lista_publicaciones' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+                <span class="text-xs font-medium">Adopción</span>
             </a>
             <a href="{% url 'chat:lista_chats' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
                 <span class="text-xs font-medium">Chats</span>
@@ -154,14 +143,9 @@
             <a href="{% url 'cats:mis_gatos' %}" class="flex flex-col items-center text-brandOrange">
                 <span class="text-xs font-medium">Mis Gatos</span>
             </a>
-            <a href="{% url 'users:logout' %}" 
-             class="flex items-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-full text-xs font-semibold border border-red-200 transition duration-200 shadow-sm transform active:scale-95 ml-1" 
-             title="Cerrar sesión">
-             <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            <span>Salir</span>
-    </a>
+            <a href="{% url 'users:mi_cuenta' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+                <span class="text-xs font-medium">Mi cuenta</span>
+            </a>
         </div>
 
     </div>

@@ -1,12 +1,15 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
 from .models import Profile, Block
+from .forms import AccountNameForm, ProfilePictureForm
 from .serializers import (
     UserSerializer,
     ProfileSerializer,
@@ -14,19 +17,47 @@ from .serializers import (
 )
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Solo lectura: la creación de usuarios pasa por register_view y la
+    edición/eliminación por el admin de Django, no por esta API.
+    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class IsProfileOwnerOrStaff(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_staff or obj.user_id == request.user.id
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProfileOwnerOrStaff]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Profile.objects.all()
+        return Profile.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class BlockViewSet(viewsets.ModelViewSet):
-    queryset = Block.objects.all()
     serializer_class = BlockSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Block.objects.filter(usuario_bloqueador=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario_bloqueador=self.request.user)
 
 
 def login_view(request):
@@ -48,7 +79,7 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect('matching:home')
+            return redirect('matching:swipe')
         else:
             messages.error(request, "Correo electrónico o contraseña incorrectos.")
             return render(request, 'users/login.html')
@@ -109,4 +140,50 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Has cerrado sesión exitosamente. ¡Te esperamos pronto en Mewtual!")
+    return redirect('users:login')
+
+
+@login_required
+def mi_cuenta_view(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        account_form = AccountNameForm(request.POST, instance=request.user)
+        picture_form = ProfilePictureForm(request.POST, request.FILES, instance=profile)
+
+        if account_form.is_valid() and picture_form.is_valid():
+            account_form.save()
+            picture_form.save()
+            messages.success(request, "Tu cuenta se actualizó correctamente.")
+            return redirect('users:mi_cuenta')
+        messages.error(request, "Por favor corrige los errores del formulario.")
+    else:
+        account_form = AccountNameForm(instance=request.user)
+        picture_form = ProfilePictureForm(instance=profile)
+
+    return render(request, 'users/mi_cuenta.html', {
+        'account_form': account_form,
+        'picture_form': picture_form,
+        'profile': profile,
+    })
+
+
+@login_required
+@require_POST
+def eliminar_cuenta_view(request):
+    password = request.POST.get('password', '')
+    if not request.user.check_password(password):
+        messages.error(request, "Contraseña incorrecta. Tu cuenta no fue eliminada.")
+        return redirect('users:mi_cuenta')
+
+    user = request.user
+    user.is_active = False
+    user.save()
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+    profile.estado_cuenta = "ELIMINADA"
+    profile.save()
+
+    logout(request)
+    messages.success(request, "Tu cuenta fue eliminada. ¡Esperamos verte de nuevo pronto!")
     return redirect('users:login')

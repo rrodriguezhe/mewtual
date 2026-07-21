@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mewtual - Mi Cuenta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { brandOrange: '#F59E0B', brandCrema: '#FEFBF6' } } } }
+    </script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-24">
+
+        <h1 class="text-xl font-bold text-gray-800 mb-4">Mi Cuenta</h1>
+
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-2 rounded-xl text-sm font-medium
+                {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-100
+                {% else %}bg-green-50 text-green-700 border border-green-100{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+
+            <!-- ── Foto de perfil ── -->
+            <div class="text-center mb-2 relative">
+                <div class="w-28 h-28 rounded-full bg-gray-200 mx-auto overflow-hidden border-4 border-white shadow-sm">
+                    {% if profile.foto_perfil %}
+                    <img id="foto-preview" src="{{ profile.foto_perfil.url }}" alt="Foto de {{ user.username }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <img id="foto-preview" src="" alt="" class="w-full h-full object-cover hidden">
+                    <div id="foto-placeholder" class="w-full h-full flex items-center justify-center text-4xl">👤</div>
+                    {% endif %}
+                </div>
+                <label for="{{ picture_form.foto_perfil.id_for_label }}"
+                       class="absolute bottom-0 right-[38%] bg-brandOrange p-2 rounded-full text-white shadow-md hover:scale-105 transition cursor-pointer"
+                       title="Cambiar foto">
+                    📸
+                </label>
+                <div class="hidden">{{ picture_form.foto_perfil }}</div>
+                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB</p>
+                {% if picture_form.foto_perfil.errors %}
+                <p class="text-xs text-red-500 mt-1">{{ picture_form.foto_perfil.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- ── Nombre ── -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-500 text-sm font-medium mb-1">Nombre</label>
+                    {{ account_form.first_name }}
+                    {% if account_form.first_name.errors %}
+                    <p class="text-xs text-red-500 mt-1">{{ account_form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm font-medium mb-1">Apellido</label>
+                    {{ account_form.last_name }}
+                    {% if account_form.last_name.errors %}
+                    <p class="text-xs text-red-500 mt-1">{{ account_form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Usuario / correo (no editables) ── -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <p class="text-xs text-gray-400 mb-1">Usuario</p>
+                <p class="text-sm font-semibold text-gray-800 mb-3">{{ user.username }}</p>
+                <p class="text-xs text-gray-400 mb-1">Correo electrónico</p>
+                <p class="text-sm font-semibold text-gray-800">{{ user.email }}</p>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-brandOrange text-white font-semibold py-3 rounded-full shadow-md hover:bg-opacity-90 transition transform active:scale-95">
+                Guardar cambios
+            </button>
+        </form>
+
+        <!-- ── Zona de peligro: eliminar cuenta ── -->
+        <div class="mt-4">
+            <button type="button" id="eliminar-cuenta-toggle"
+                    class="w-full bg-red-600 text-white font-semibold py-2.5 rounded-xl shadow-sm hover:bg-red-700 transition transform active:scale-95">
+                Eliminar cuenta
+            </button>
+
+            <div id="eliminar-cuenta-panel" class="hidden mt-3 bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
+                <p class="text-xs text-red-700">
+                    Tu cuenta será desactivada, no podrás iniciar sesión, y tus gatos
+                    dejarán de mostrarse a otros usuarios. Un administrador puede
+                    reactivarla si cambias de opinión.
+                </p>
+                <form method="POST" action="{% url 'users:eliminar_cuenta' %}" class="space-y-2">
+                    {% csrf_token %}
+                    <input type="password" name="password" required placeholder="Confirma tu contraseña"
+                           class="w-full px-4 py-2.5 rounded-xl border border-red-200 focus:outline-none focus:border-red-500 bg-white shadow-sm">
+                    <div class="flex gap-2">
+                        <button type="button" id="eliminar-cuenta-cancelar"
+                                class="flex-1 bg-white text-gray-600 font-semibold py-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="flex-1 bg-red-600 text-white font-semibold py-2 rounded-xl hover:bg-red-700 transition">
+                            Confirmar eliminación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <a href="{% url 'users:logout' %}"
+           class="flex items-center justify-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold border border-red-200 transition duration-200 shadow-sm transform active:scale-95 mt-4"
+           title="Cerrar sesión">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span>Salir</span>
+        </a>
+
+        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 flex justify-around items-center shadow-lg rounded-t-2xl">
+            <a href="{% url 'matching:swipe' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+                <span class="text-xs font-medium">Match</span>
+            </a>
+            <a href="{% url 'adoption:lista_publicaciones' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+                <span class="text-xs font-medium">Adopción</span>
+            </a>
+            <a href="{% url 'chat:lista_chats' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+                <span class="text-xs font-medium">Chats</span>
+            </a>
+            <a href="{% url 'cats:mis_gatos' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
+                <span class="text-xs font-medium">Mis Gatos</span>
+            </a>
+            <a href="{% url 'users:mi_cuenta' %}" class="flex flex-col items-center text-brandOrange">
+                <span class="text-xs font-medium">Mi cuenta</span>
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        // ── Vista previa de foto ──
+        const fotoInput = document.getElementById('{{ picture_form.foto_perfil.id_for_label }}');
+        if (fotoInput) {
+            fotoInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('foto-preview');
+                    const placeholder = document.getElementById('foto-placeholder');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    if (placeholder) placeholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ── Panel de confirmación para eliminar cuenta ──
+        const eliminarToggle = document.getElementById('eliminar-cuenta-toggle');
+        const eliminarPanel = document.getElementById('eliminar-cuenta-panel');
+        const eliminarCancelar = document.getElementById('eliminar-cuenta-cancelar');
+        if (eliminarToggle && eliminarPanel) {
+            eliminarToggle.addEventListener('click', () => eliminarPanel.classList.remove('hidden'));
+        }
+        if (eliminarCancelar && eliminarPanel) {
+            eliminarCancelar.addEventListener('click', () => eliminarPanel.classList.add('hidden'));
+        }
+    </script>
+</body>
+</html>

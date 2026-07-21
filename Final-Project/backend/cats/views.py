@@ -78,6 +78,33 @@ def mis_gatos(request):
 
 
 @login_required
+def ver_perfil(request, cat_id):
+    """Perfil de un gato tal como lo vería otro usuario (adopción, match, etc.)."""
+    gato = get_object_or_404(Cat, pk=cat_id)
+    edad = calcular_edad(gato.fecha_nacimiento)
+    es_owner = gato.owner_id == request.user.id
+
+    gato_activo_id = request.GET.get('gato_activo')
+    gato_activo = None
+    if gato_activo_id and gato_activo_id.isdigit():
+        gato_activo = Cat.objects.filter(pk=gato_activo_id, owner=request.user).first()
+    puede_swipe = not es_owner and gato_activo is not None
+
+    post_adopcion = gato.adoptionpost_set.filter(estado="DISPONIBLE").first()
+    puede_contactar = not es_owner and not puede_swipe and post_adopcion is not None
+
+    return render(request, "cats/ver_perfil.html", {
+        "gato": gato,
+        "edad": edad,
+        "es_owner": es_owner,
+        "gato_activo": gato_activo,
+        "puede_swipe": puede_swipe,
+        "post_adopcion": post_adopcion,
+        "puede_contactar": puede_contactar,
+    })
+
+
+@login_required
 def crear_perfil(request):
     """
     RF-08: Crea un nuevo perfil de gato.
