@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mewtual ("Plataforma para emparejamiento responsable de gatos") is a Django monolith for responsible cat-breeding matchmaking — cat owners create profiles for their cats, swipe-match compatible cats for breeding, and chat with matches. All domain code (models, templates, messages) is written in Spanish.
 
-There is only a `Final-Project/backend/` Django project — no separate frontend app. Pages are server-rendered Django templates; a parallel DRF API exists on some apps but is only partially wired up (see Architecture below). The Django project used to live at the repo root (`backend/`) but was relocated under `Final-Project/backend/` to keep source and deliverables together, per the course's Software Engineering II final project brief. Diagrams (UML, ER, BPMN, architecture) live in `Final-Project/Diagrams/`; written deliverables (analysis, design, proposal) live in `Deliveries/` at the repo root.
+There is only a `Final-Project/backend/` Django project — no separate frontend app. Pages are server-rendered Django templates; a parallel DRF API exists on some apps but is only partially wired up (see Architecture below). The Django project used to live at the repo root (`backend/`) but was relocated under `Final-Project/backend/` to keep source and deliverables together, per the course's Software Engineering II final project brief. Diagrams (UML, ER, BPMN, architecture) live in `Final-Project/docs/diagrams/`, alongside `Final-Project/docs/DESIGN_PATTERNS.md`; written deliverables (analysis, design, proposal) live in `Deliveries/` at the repo root.
 
 ## Commands
 
