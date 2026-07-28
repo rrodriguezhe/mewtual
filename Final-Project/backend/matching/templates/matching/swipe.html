@@ -36,7 +36,7 @@
         {% if candidato %}
         <div id="swipe-card" class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden flex flex-col relative mb-4" style="touch-action: none;">
 
-            <div class="relative w-full flex-1 min-h-[16rem] bg-gray-200">
+            <div class="relative w-full aspect-[3/4] bg-gray-200">
                 <a href="{% url 'cats:ver_perfil' candidato.id %}?gato_activo={{ gato_activo.id }}" class="block w-full h-full">
                     {% if candidato.foto_principal %}
                     <img src="{{ candidato.foto_principal.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
@@ -123,6 +123,7 @@
             var startX = 0, startY = 0;
             var currentDx = 0;
             var dragOccurred = false;
+            var captured = false;
 
             function clamp(value, min, max) {
                 return Math.max(min, Math.min(max, value));
@@ -168,8 +169,13 @@
                 startY = e.clientY;
                 currentDx = 0;
                 dragOccurred = false;
-                card.setPointerCapture(pointerId);
+                captured = false;
                 card.style.transition = 'none';
+                // Pointer capture is deferred to the moment an actual drag is
+                // detected (see pointermove below) rather than set here. Capturing
+                // eagerly on every pointerdown retargets the resulting click event
+                // to `card`, which was swallowing clicks on the like/reject buttons
+                // and the profile link even for a plain tap that never moved.
             });
 
             card.addEventListener('pointermove', function (e) {
@@ -180,6 +186,8 @@
 
                 if (!dragOccurred && Math.sqrt(dx * dx + dy * dy) > CLICK_THRESHOLD) {
                     dragOccurred = true;
+                    card.setPointerCapture(pointerId);
+                    captured = true;
                 }
                 if (!dragOccurred) return;
 
@@ -201,7 +209,7 @@
 
             card.addEventListener('pointerup', function (e) {
                 if (state !== 'dragging' || e.pointerId !== pointerId) return;
-                card.releasePointerCapture(pointerId);
+                if (captured) card.releasePointerCapture(pointerId);
 
                 if (!dragOccurred) {
                     state = 'idle';
@@ -217,7 +225,7 @@
 
             card.addEventListener('pointercancel', function (e) {
                 if (state !== 'dragging' || e.pointerId !== pointerId) return;
-                card.releasePointerCapture(pointerId);
+                if (captured) card.releasePointerCapture(pointerId);
                 snapBack();
             });
 
