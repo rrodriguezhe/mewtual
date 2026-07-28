@@ -8,6 +8,18 @@ ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]
 MAX_IMAGE_SIZE_MB = 5
 
 
+def validate_image_file(foto):
+    """Valida tamaño y formato de una imagen subida (RNF archivos)."""
+    if foto.size > MAX_IMAGE_SIZE_MB * 1024 * 1024:
+        raise ValidationError(
+            f"La imagen no puede superar {MAX_IMAGE_SIZE_MB} MB."
+        )
+    if hasattr(foto, "content_type") and foto.content_type not in ALLOWED_IMAGE_TYPES:
+        raise ValidationError(
+            "Solo se aceptan imágenes en formato JPG, PNG o WEBP."
+        )
+
+
 class CatForm(forms.ModelForm):
     """
     Formulario para crear y editar el perfil de un gato.
@@ -102,16 +114,7 @@ class CatForm(forms.ModelForm):
     def clean_foto(self):
         foto = self.cleaned_data.get("foto")
         if foto:
-            # Tamaño máximo (RNF archivos)
-            if foto.size > MAX_IMAGE_SIZE_MB * 1024 * 1024:
-                raise ValidationError(
-                    f"La imagen no puede superar {MAX_IMAGE_SIZE_MB} MB."
-                )
-            # Formato permitido (RNF archivos): JPG, PNG, WEBP
-            if hasattr(foto, "content_type") and foto.content_type not in ALLOWED_IMAGE_TYPES:
-                raise ValidationError(
-                    "Solo se aceptan imágenes en formato JPG, PNG o WEBP."
-                )
+            validate_image_file(foto)
         return foto
 
     def clean_fecha_nacimiento(self):

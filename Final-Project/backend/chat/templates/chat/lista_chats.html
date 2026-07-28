@@ -24,8 +24,8 @@
                 <a href="{% url 'chat:chat_individual' chat_id=item.chat.id %}" class="flex items-center justify-between py-3 hover:bg-white hover:px-2 rounded-xl transition">
                     <div class="flex items-center space-x-3">
                         <div class="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                            {% if item.otro_gato.foto %}
-                            <img src="{{ item.otro_gato.foto.url }}" class="object-cover w-full h-full">
+                            {% if item.otro_gato.foto_principal %}
+                            <img src="{{ item.otro_gato.foto_principal.url }}" class="object-cover w-full h-full">
                             {% else %}
                             <span class="text-2xl">🐱</span>
                             {% endif %}

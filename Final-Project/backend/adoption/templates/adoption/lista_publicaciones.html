@@ -48,8 +48,8 @@
                 <a href="{% url 'cats:ver_perfil' post.gato.id %}"
                    class="block bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                     <div class="flex items-center space-x-4">
-                        {% if post.gato.foto %}
-                        <img src="{{ post.gato.foto.url }}" alt="{{ post.gato.nombre }}"
+                        {% if post.gato.foto_principal %}
+                        <img src="{{ post.gato.foto_principal.url }}" alt="{{ post.gato.nombre }}"
                              class="w-16 h-16 rounded-full object-cover border-2 border-brandOrange">
                         {% else %}
                         <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-brandOrange">

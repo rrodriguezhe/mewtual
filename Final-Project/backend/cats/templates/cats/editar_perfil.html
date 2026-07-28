@@ -49,29 +49,53 @@
         </div>
         {% endif %}
 
+        <!-- ── Galería de fotos ── -->
+        <div class="mb-4">
+            <p class="text-sm font-semibold text-gray-600 mb-2">Fotos del gato</p>
+            {% if fotos %}
+            <div id="photo-gallery" class="grid grid-cols-3 gap-2">
+                {% for foto in fotos %}
+                <div class="photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 {% if forloop.first %}ring-2 ring-brandOrange{% endif %}"
+                     data-photo-id="{{ foto.id }}">
+                    <img src="{{ foto.imagen.url }}" alt="" class="w-full h-full object-cover pointer-events-none" draggable="false">
+                    <div class="drag-handle absolute top-1 left-1 bg-white/90 backdrop-blur-sm text-gray-500 text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-sm cursor-grab active:cursor-grabbing"
+                         style="touch-action: none;"
+                         title="Arrastrar para reordenar">
+                        ⠿
+                    </div>
+                    <span class="featured-badge absolute bottom-1 left-1 bg-white/90 backdrop-blur-sm text-brandOrange font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-sm {% if not forloop.first %}hidden{% endif %}">
+                        ⭐ Principal
+                    </span>
+                    <form method="POST" action="{% url 'cats:eliminar_foto' foto.id %}" class="contents">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="absolute top-1 right-1 bg-white/90 backdrop-blur-sm text-gray-500 hover:text-red-500 w-6 h-6 rounded-full flex items-center justify-center shadow-sm text-xs"
+                                onclick="return confirm('¿Eliminar esta foto?')"
+                                title="Eliminar foto">
+                            ✕
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="text-xs text-gray-400 mt-2">La primera foto es la que verán los demás. Arrástrala para cambiar el orden.</p>
+            {% else %}
+            <p class="text-xs text-gray-400">Este gato aún no tiene fotos.</p>
+            {% endif %}
+        </div>
+
         <form method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
             {% csrf_token %}
 
-            <!-- ── Foto ── -->
-            <div class="text-center mb-2 relative">
-                <div class="w-28 h-28 rounded-full bg-gray-200 mx-auto overflow-hidden border-4 border-white shadow-sm">
-                    {% if gato.foto %}
-                    <img id="foto-preview" src="{{ gato.foto.url }}" alt="Foto de {{ gato.nombre }}" class="w-full h-full object-cover">
-                    {% else %}
-                    <img id="foto-preview" src="" alt="" class="w-full h-full object-cover hidden">
-                    <div id="foto-placeholder" class="w-full h-full flex items-center justify-center text-4xl">🐱</div>
-                    {% endif %}
-                </div>
-                <label for="{{ form.foto.id_for_label }}"
-                       class="absolute bottom-0 right-[38%] bg-brandOrange p-2 rounded-full text-white shadow-md hover:scale-105 transition cursor-pointer"
-                       title="Cambiar foto">
-                    📸
+            <!-- ── Agregar más fotos ── -->
+            <div class="text-center mb-2">
+                <label for="fotos-input"
+                       class="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-full shadow-sm cursor-pointer hover:border-brandOrange transition">
+                    📸 Agregar fotos
                 </label>
-                <div class="hidden">{{ form.foto }}</div>
-                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB</p>
-                {% if form.foto.errors %}
-                <p class="text-xs text-red-500 mt-1">{{ form.foto.errors.0 }}</p>
-                {% endif %}
+                <input type="file" id="fotos-input" name="fotos" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
+                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB cada una · Máx 6 fotos en total</p>
+                <div id="fotos-preview" class="flex flex-wrap gap-2 mt-2 justify-center"></div>
             </div>
 
             <!-- ── Nombre ── -->
@@ -361,23 +385,144 @@
     </div>
 
     <script>
-        // ── Vista previa de foto ──
-        const fotoInput = document.getElementById('{{ form.foto.id_for_label }}');
-        if (fotoInput) {
-            fotoInput.addEventListener('change', function () {
-                const file = this.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const preview = document.getElementById('foto-preview');
-                    const placeholder = document.getElementById('foto-placeholder');
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    if (placeholder) placeholder.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
+        // ── Vista previa de fotos nuevas ──
+        const fotosInput = document.getElementById('fotos-input');
+        const fotosPreview = document.getElementById('fotos-preview');
+        if (fotosInput) {
+            fotosInput.addEventListener('change', function () {
+                fotosPreview.innerHTML = '';
+                Array.from(this.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'w-14 h-14 rounded-lg object-cover border-2 border-white shadow-sm';
+                        fotosPreview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
             });
         }
+
+        // ── Arrastrar y soltar para reordenar la galería ──
+        (function () {
+            const gallery = document.getElementById('photo-gallery');
+            if (!gallery) return;
+
+            const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+            const csrfToken = csrfInput ? csrfInput.value : '';
+            const catId = {{ gato.id }};
+
+            let dragEl = null;
+            let pointerId = null;
+            let offsetX = 0, offsetY = 0;
+            let dragging = false;
+
+            function getThumbs() {
+                return Array.from(gallery.querySelectorAll('.photo-thumb'));
+            }
+
+            function updateFeaturedUI() {
+                getThumbs().forEach((thumb, index) => {
+                    const badge = thumb.querySelector('.featured-badge');
+                    if (index === 0) {
+                        thumb.classList.add('ring-2', 'ring-brandOrange');
+                        if (badge) badge.classList.remove('hidden');
+                    } else {
+                        thumb.classList.remove('ring-2', 'ring-brandOrange');
+                        if (badge) badge.classList.add('hidden');
+                    }
+                });
+            }
+
+            function persistOrder() {
+                const orden = getThumbs().map(t => parseInt(t.dataset.photoId, 10));
+                fetch(`/cats/${catId}/fotos/reordenar/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ orden: orden }),
+                });
+            }
+
+            function finishDrag(e) {
+                if (!dragging || e.pointerId !== pointerId) return;
+                dragging = false;
+                e.target.releasePointerCapture(pointerId);
+                dragEl.style.position = '';
+                dragEl.style.left = '';
+                dragEl.style.top = '';
+                dragEl.style.width = '';
+                dragEl.style.height = '';
+                dragEl.style.zIndex = '';
+                dragEl.style.pointerEvents = '';
+                dragEl.classList.remove('opacity-80', 'scale-105', 'shadow-lg');
+                updateFeaturedUI();
+                persistOrder();
+                dragEl = null;
+            }
+
+            getThumbs().forEach(thumb => {
+                const handle = thumb.querySelector('.drag-handle');
+                if (!handle) return;
+
+                handle.addEventListener('pointerdown', function (e) {
+                    if (e.button !== undefined && e.button !== 0) return;
+                    dragEl = thumb;
+                    pointerId = e.pointerId;
+                    dragging = true;
+                    const rect = thumb.getBoundingClientRect();
+                    offsetX = e.clientX - rect.left;
+                    offsetY = e.clientY - rect.top;
+
+                    thumb.style.position = 'fixed';
+                    thumb.style.left = rect.left + 'px';
+                    thumb.style.top = rect.top + 'px';
+                    thumb.style.width = rect.width + 'px';
+                    thumb.style.height = rect.height + 'px';
+                    thumb.style.zIndex = '50';
+                    thumb.classList.add('opacity-80', 'scale-105', 'shadow-lg');
+
+                    handle.setPointerCapture(pointerId);
+                });
+
+                handle.addEventListener('pointermove', function (e) {
+                    if (!dragging || e.pointerId !== pointerId) return;
+                    dragEl.style.left = (e.clientX - offsetX) + 'px';
+                    dragEl.style.top = (e.clientY - offsetY) + 'px';
+
+                    const others = getThumbs().filter(t => t !== dragEl);
+                    for (const other of others) {
+                        const rect = other.getBoundingClientRect();
+                        // Shrink the hit box to the center 60% of the cell so a swap only
+                        // fires once the pointer clearly enters a neighbor, not just grazes
+                        // its edge. Without this, swapping reflows the grid under the
+                        // cursor, which re-triggers the same overlap test on the very next
+                        // pointermove tick and flips the swap back and forth every frame.
+                        const marginX = rect.width * 0.2;
+                        const marginY = rect.height * 0.2;
+                        const overX = e.clientX >= rect.left + marginX && e.clientX <= rect.right - marginX;
+                        const overY = e.clientY >= rect.top + marginY && e.clientY <= rect.bottom - marginY;
+                        if (overX && overY) {
+                            if (dragEl.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) {
+                                gallery.insertBefore(dragEl, other.nextSibling);
+                            } else {
+                                gallery.insertBefore(dragEl, other);
+                            }
+                            updateFeaturedUI();
+                            break;
+                        }
+                    }
+                });
+
+                handle.addEventListener('pointerup', finishDrag);
+                handle.addEventListener('pointercancel', finishDrag);
+            });
+
+            updateFeaturedUI();
+        })();
 
         // ── Selector de género tipo botón ──
         function actualizarEstiloSexo() {

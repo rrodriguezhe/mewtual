@@ -16,8 +16,8 @@
             <a href="{% url 'chat:lista_chats' %}" class="text-gray-500 font-bold text-lg pr-1 hover:text-brandOrange transition">&larr;</a>
 
             <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                {% if otro_gato.foto %}
-                <img src="{{ otro_gato.foto.url }}" class="w-full h-full object-cover">
+                {% if otro_gato.foto_principal %}
+                <img src="{{ otro_gato.foto_principal.url }}" class="w-full h-full object-cover">
                 {% else %}
                 <span class="text-xl">🐱</span>
                 {% endif %}

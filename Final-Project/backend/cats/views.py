@@ -1,13 +1,20 @@
+import json
 from datetime import date
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.db.models import Max
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 from rest_framework import permissions, viewsets
 
-from .forms import CatForm, MedicalRecordForm, VaccineForm
-from .models import Cat, MedicalRecord, Vaccine
+from .forms import CatForm, MedicalRecordForm, VaccineForm, validate_image_file
+from .models import Cat, CatPhoto, MedicalRecord, Vaccine
 from .serializers import CatSerializer
+
+MAX_FOTOS_POR_GATO = 6
 
 
 # ─────────────────────────────────────────────
@@ -121,6 +128,9 @@ def crear_perfil(request):
             gato.owner = request.user
             gato.save()
 
+            if form.cleaned_data.get("foto"):
+                CatPhoto.objects.create(gato=gato, imagen=gato.foto.name, orden=0)
+
             if vaccine_form.tiene_datos():
                 vacuna = vaccine_form.save(commit=False)
                 vacuna.gato = gato
@@ -162,9 +172,28 @@ def editar_perfil(request, cat_id):
         form = CatForm(request.POST, request.FILES, instance=gato)
         vaccine_form = VaccineForm(request.POST, request.FILES, prefix="vac")
         medical_form = MedicalRecordForm(request.POST, request.FILES, prefix="med")
+        nuevas_fotos = request.FILES.getlist("fotos")
 
-        if form.is_valid() and vaccine_form.is_valid() and medical_form.is_valid():
+        fotos_error = None
+        if nuevas_fotos:
+            if gato.fotos.count() + len(nuevas_fotos) > MAX_FOTOS_POR_GATO:
+                fotos_error = f"Un gato puede tener máximo {MAX_FOTOS_POR_GATO} fotos."
+            else:
+                try:
+                    for f in nuevas_fotos:
+                        validate_image_file(f)
+                except ValidationError as e:
+                    fotos_error = e.message
+
+        if form.is_valid() and vaccine_form.is_valid() and medical_form.is_valid() and fotos_error is None:
             form.save()
+
+            if nuevas_fotos:
+                max_orden = gato.fotos.aggregate(Max("orden"))["orden__max"]
+                siguiente_orden = 0 if max_orden is None else max_orden + 1
+                for i, f in enumerate(nuevas_fotos):
+                    CatPhoto.objects.create(gato=gato, imagen=f, orden=siguiente_orden + i)
+                messages.success(request, "Fotos agregadas correctamente.")
 
             if vaccine_form.tiene_datos():
                 vacuna = vaccine_form.save(commit=False)
@@ -181,7 +210,10 @@ def editar_perfil(request, cat_id):
             messages.success(request, f"Perfil de {gato.nombre} actualizado.")
             return redirect("cats:mis_gatos")
         else:
-            messages.error(request, "Por favor corrige los errores del formulario.")
+            if fotos_error:
+                messages.error(request, fotos_error)
+            if not (form.is_valid() and vaccine_form.is_valid() and medical_form.is_valid()):
+                messages.error(request, "Por favor corrige los errores del formulario.")
     else:
         form = CatForm(instance=gato)
         vaccine_form = VaccineForm(prefix="vac")
@@ -194,6 +226,7 @@ def editar_perfil(request, cat_id):
         "gato": gato,
         "vacunas": vacunas,
         "registros_medicos": registros_medicos,
+        "fotos": gato.fotos.all(),
         "cruce": puede_cruce_responsable(gato),
         "edad": calcular_edad(gato.fecha_nacimiento),
         "vacunado": vacunas_vigentes(gato),
@@ -236,6 +269,47 @@ def eliminar_vacuna(request, vacuna_id):
     vacuna.delete()
     messages.success(request, "Vacuna eliminada.")
     return redirect("cats:editar_perfil", cat_id=cat_id)
+
+
+@login_required
+@require_POST
+def eliminar_foto(request, foto_id):
+    """Elimina una foto de la galería de un gato propio del usuario."""
+    foto = get_object_or_404(CatPhoto, pk=foto_id, gato__owner=request.user)
+    gato = foto.gato
+    foto.delete()
+
+    # Renormaliza el orden restante a 0..N-1 sin huecos.
+    for i, f in enumerate(gato.fotos.all()):
+        if f.orden != i:
+            f.orden = i
+            f.save(update_fields=["orden"])
+
+    messages.success(request, "Foto eliminada.")
+    return redirect("cats:editar_perfil", cat_id=gato.pk)
+
+
+@login_required
+@require_POST
+def reordenar_fotos(request, cat_id):
+    """Persiste el nuevo orden de la galería de fotos (arrastrar y soltar)."""
+    gato = get_object_or_404(Cat, pk=cat_id, owner=request.user)
+
+    try:
+        payload = json.loads(request.body)
+        orden_ids = payload["orden"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return JsonResponse({"error": "Cuerpo de la solicitud inválido."}, status=400)
+
+    fotos = {f.id: f for f in gato.fotos.all()}
+    if set(orden_ids) != set(fotos.keys()):
+        return JsonResponse({"error": "La lista de fotos no coincide con la galería actual."}, status=400)
+
+    for i, foto_id in enumerate(orden_ids):
+        fotos[foto_id].orden = i
+        fotos[foto_id].save(update_fields=["orden"])
+
+    return JsonResponse({"ok": True})
 
 
 # ─────────────────────────────────────────────

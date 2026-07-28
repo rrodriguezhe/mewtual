@@ -60,6 +60,34 @@ class Cat(models.Model):
     def __str__(self):
         return self.nombre
 
+    @property
+    def foto_principal(self):
+        fotos = list(self.fotos.all())
+        return fotos[0].imagen if fotos else self.foto
+
+
+class CatPhoto(models.Model):
+
+    gato = models.ForeignKey(
+        Cat,
+        on_delete=models.CASCADE,
+        related_name="fotos"
+    )
+
+    imagen = models.ImageField(
+        upload_to="cats/gallery/"
+    )
+
+    orden = models.PositiveIntegerField(
+        default=0
+    )
+
+    class Meta:
+        ordering = ["orden"]
+
+    def __str__(self):
+        return f"Foto {self.orden} de {self.gato.nombre}"
+
 
 class Vaccine(models.Model):
 

@@ -1,8 +1,11 @@
+import base64
 import datetime
+import json
 import tempfile
 from unittest import mock
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -11,11 +14,32 @@ from rest_framework.test import APITestCase
 
 from adoption.models import AdoptionPost
 
-from .forms import CatForm, MedicalRecordForm, VaccineForm
-from .models import Cat, MedicalRecord, Vaccine
+from .forms import CatForm, MedicalRecordForm, VaccineForm, validate_image_file
+from .models import Cat, CatPhoto, MedicalRecord, Vaccine
 from .views import calcular_edad, puede_cruce_responsable, vacunas_vigentes
 
 CATS_API_URL = "/cats/api/"
+
+# 1x1 transparent PNG - genuine valid image bytes, since Pillow-backed
+# ImageField validation rejects arbitrary non-image content.
+_PNG_1PX = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
+
+
+def _valid_image_file(name="foto.png", content_type="image/png"):
+    return SimpleUploadedFile(name, _PNG_1PX, content_type=content_type)
+
+
+def _valid_cat_post_data(cat):
+    return {
+        "nombre": cat.nombre,
+        "raza": cat.raza,
+        "sexo": cat.sexo,
+        "fecha_nacimiento": cat.fecha_nacimiento.isoformat(),
+        "peso": cat.peso,
+        "color": cat.color,
+    }
 
 
 def _make_cat(owner, sexo="M", nombre="Gato"):
@@ -375,3 +399,204 @@ class CatViewSetAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         created = Cat.objects.get(pk=response.data["id"])
         self.assertEqual(created.owner, self.bob)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class CatPhotoModelTests(TestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_user(username="alice", password="pass12345")
+        self.cat = _make_cat(self.owner)
+
+    def test_fotos_ordered_by_orden_even_if_created_out_of_order(self):
+        segunda = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=1)
+        primera = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        self.assertEqual(list(self.cat.fotos.all()), [primera, segunda])
+
+    def test_deleting_cat_cascades_to_photos(self):
+        CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        self.cat.delete()
+        self.assertEqual(CatPhoto.objects.count(), 0)
+
+    def test_foto_principal_returns_orden_zero_photo(self):
+        segunda = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file("b.png"), orden=1)
+        primera = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file("a.png"), orden=0)
+        self.assertEqual(self.cat.foto_principal.name, primera.imagen.name)
+        self.assertNotEqual(self.cat.foto_principal.name, segunda.imagen.name)
+
+    def test_foto_principal_falls_back_to_legacy_foto_when_gallery_empty(self):
+        self.cat.foto = _valid_image_file()
+        self.cat.save()
+        self.assertEqual(self.cat.foto_principal.name, self.cat.foto.name)
+
+    def test_foto_principal_falsy_when_no_photos_anywhere(self):
+        self.assertFalse(self.cat.foto_principal)
+
+
+class ValidateImageFileTests(TestCase):
+
+    def test_rejects_oversized_file(self):
+        big = SimpleUploadedFile("big.png", b"x" * (6 * 1024 * 1024), content_type="image/png")
+        with self.assertRaises(ValidationError):
+            validate_image_file(big)
+
+    def test_rejects_disallowed_content_type(self):
+        gif = SimpleUploadedFile("foto.gif", _PNG_1PX, content_type="image/gif")
+        with self.assertRaises(ValidationError):
+            validate_image_file(gif)
+
+    def test_accepts_allowed_content_types(self):
+        for content_type in ["image/jpeg", "image/png", "image/webp"]:
+            validate_image_file(_valid_image_file(content_type=content_type))  # no raise
+
+    def test_clean_foto_still_enforces_same_rules(self):
+        # Regression guard: extracting validate_image_file() must not change
+        # CatForm's own single-field validation behavior. Uses the size rule
+        # (not content-type) since Django's ImageField.to_python() re-detects
+        # and overwrites content_type from the real image bytes via Pillow,
+        # which would silently "fix" a mislabeled-but-valid file before
+        # clean_foto ever runs.
+        oversized = SimpleUploadedFile(
+            "foto.png", _PNG_1PX + b"\x00" * (6 * 1024 * 1024), content_type="image/png"
+        )
+        form = CatForm(
+            data={
+                "nombre": "Simba", "raza": "Angora", "sexo": "M",
+                "fecha_nacimiento": "2022-01-01", "peso": 3.5, "color": "Blanco",
+            },
+            files={"foto": oversized},
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("foto", form.errors)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class EditarPerfilBulkUploadTests(TestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_user(username="alice", password="pass12345")
+        self.cat = _make_cat(self.owner)
+        self.client.login(username="alice", password="pass12345")
+
+    def _post(self, fotos):
+        data = _valid_cat_post_data(self.cat)
+        return self.client.post(
+            reverse("cats:editar_perfil", args=[self.cat.pk]),
+            data={**data, "fotos": fotos},
+        )
+
+    def test_bulk_upload_creates_photos_with_incrementing_orden(self):
+        response = self._post([_valid_image_file("a.png"), _valid_image_file("b.png")])
+        self.assertRedirects(response, reverse("cats:mis_gatos"))
+        fotos = list(self.cat.fotos.all())
+        self.assertEqual(len(fotos), 2)
+        self.assertEqual([f.orden for f in fotos], [0, 1])
+
+    def test_bulk_upload_continues_orden_from_existing_max(self):
+        CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        self._post([_valid_image_file("b.png")])
+        fotos = list(self.cat.fotos.all())
+        self.assertEqual([f.orden for f in fotos], [0, 1])
+
+    def test_bulk_upload_all_or_nothing_on_one_bad_file(self):
+        bad = SimpleUploadedFile("bad.gif", _PNG_1PX, content_type="image/gif")
+        self._post([_valid_image_file("a.png"), bad])
+        self.assertEqual(self.cat.fotos.count(), 0)
+
+    def test_bulk_upload_enforces_six_photo_cap(self):
+        for i in range(5):
+            CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=i)
+        self._post([_valid_image_file("x.png"), _valid_image_file("y.png")])
+        # 5 existing + 2 new = 7 > 6: whole batch rejected, count unchanged.
+        self.assertEqual(self.cat.fotos.count(), 5)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class EliminarFotoViewTests(TestCase):
+
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="pass12345")
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.cat = _make_cat(self.alice)
+        self.f0 = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        self.f1 = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=1)
+        self.f2 = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=2)
+
+    def test_404_for_non_owner(self):
+        self.client.login(username="bob", password="pass12345")
+        response = self.client.post(reverse("cats:eliminar_foto", args=[self.f0.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(CatPhoto.objects.filter(pk=self.f0.pk).exists())
+
+    def test_owner_can_delete_and_is_redirected(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(reverse("cats:eliminar_foto", args=[self.f0.pk]))
+        self.assertRedirects(response, reverse("cats:editar_perfil", args=[self.cat.pk]))
+        self.assertFalse(CatPhoto.objects.filter(pk=self.f0.pk).exists())
+
+    def test_orden_renormalizes_after_delete(self):
+        self.client.login(username="alice", password="pass12345")
+        self.client.post(reverse("cats:eliminar_foto", args=[self.f0.pk]))
+        restantes = list(self.cat.fotos.all())
+        self.assertEqual([f.pk for f in restantes], [self.f1.pk, self.f2.pk])
+        self.assertEqual([f.orden for f in restantes], [0, 1])
+
+    def test_get_not_allowed(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(reverse("cats:eliminar_foto", args=[self.f0.pk]))
+        self.assertEqual(response.status_code, 405)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class ReordenarFotosViewTests(TestCase):
+
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="pass12345")
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.cat = _make_cat(self.alice)
+        self.f0 = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        self.f1 = CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=1)
+        self.url = reverse("cats:reordenar_fotos", args=[self.cat.pk])
+
+    def _post_json(self, payload):
+        return self.client.post(self.url, data=json.dumps(payload), content_type="application/json")
+
+    def test_anonymous_redirected_to_login(self):
+        response = self._post_json({"orden": [self.f1.pk, self.f0.pk]})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_404_for_non_owner(self):
+        self.client.login(username="bob", password="pass12345")
+        response = self._post_json({"orden": [self.f1.pk, self.f0.pk]})
+        self.assertEqual(response.status_code, 404)
+
+    def test_happy_path_updates_orden_to_match_index(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self._post_json({"orden": [self.f1.pk, self.f0.pk]})
+        self.assertEqual(response.status_code, 200)
+        self.f0.refresh_from_db()
+        self.f1.refresh_from_db()
+        self.assertEqual(self.f1.orden, 0)
+        self.assertEqual(self.f0.orden, 1)
+
+    def test_malformed_json_returns_400(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(self.url, data="not json", content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_foreign_photo_id_returns_400_with_no_partial_writes(self):
+        other_cat = _make_cat(self.bob)
+        foreign = CatPhoto.objects.create(gato=other_cat, imagen=_valid_image_file(), orden=0)
+        self.client.login(username="alice", password="pass12345")
+        response = self._post_json({"orden": [foreign.pk, self.f0.pk]})
+        self.assertEqual(response.status_code, 400)
+        self.f0.refresh_from_db()
+        self.f1.refresh_from_db()
+        self.assertEqual(self.f0.orden, 0)
+        self.assertEqual(self.f1.orden, 1)
+
+    def test_get_not_allowed(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 405)

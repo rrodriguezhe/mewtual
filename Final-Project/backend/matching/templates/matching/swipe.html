@@ -38,8 +38,8 @@
 
             <div class="relative w-full flex-1 min-h-[16rem] bg-gray-200">
                 <a href="{% url 'cats:ver_perfil' candidato.id %}?gato_activo={{ gato_activo.id }}" class="block w-full h-full">
-                    {% if candidato.foto %}
-                    <img src="{{ candidato.foto.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
+                    {% if candidato.foto_principal %}
+                    <img src="{{ candidato.foto_principal.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
                     {% else %}
                     <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
                     {% endif %}

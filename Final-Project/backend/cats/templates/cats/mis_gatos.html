@@ -59,8 +59,8 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                     <a href="{% url 'cats:ver_perfil' item.obj.pk %}" class="flex items-center space-x-4">
                         <!-- Foto -->
-                        {% if item.obj.foto %}
-                        <img src="{{ item.obj.foto.url }}"
+                        {% if item.obj.foto_principal %}
+                        <img src="{{ item.obj.foto_principal.url }}"
                              alt="Foto de {{ item.obj.nombre }}"
                              class="w-16 h-16 rounded-full object-cover border-2
                              {% if item.vacunado %}border-brandOrange{% else %}border-gray-200{% endif %}">
