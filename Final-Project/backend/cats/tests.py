@@ -512,6 +512,32 @@ class EditarPerfilBulkUploadTests(TestCase):
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class EditarPerfilAddTileVisibilityTests(TestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_user(username="alice", password="pass12345")
+        self.cat = _make_cat(self.owner)
+        self.client.login(username="alice", password="pass12345")
+        self.url = reverse("cats:editar_perfil", args=[self.cat.pk])
+
+    def test_max_fotos_in_context(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.context["max_fotos"], 6)
+
+    def test_add_tile_visible_below_cap(self):
+        CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'id="add-photo-tile"')
+        self.assertNotContains(response, 'select-none hidden">')
+
+    def test_add_tile_hidden_at_cap(self):
+        for i in range(6):
+            CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(f"f{i}.png"), orden=i)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'select-none hidden">')
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class EliminarFotoViewTests(TestCase):
 
     def setUp(self):
@@ -544,6 +570,74 @@ class EliminarFotoViewTests(TestCase):
     def test_get_not_allowed(self):
         self.client.login(username="alice", password="pass12345")
         response = self.client.get(reverse("cats:eliminar_foto", args=[self.f0.pk]))
+        self.assertEqual(response.status_code, 405)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class SubirFotoViewTests(TestCase):
+
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="pass12345")
+        self.bob = User.objects.create_user(username="bob", password="pass12345")
+        self.cat = _make_cat(self.alice)
+        self.url = reverse("cats:subir_foto", args=[self.cat.pk])
+
+    def test_anonymous_redirected_to_login(self):
+        response = self.client.post(self.url, data={"foto": _valid_image_file()})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("users:login"), response.url)
+
+    def test_404_for_non_owner(self):
+        self.client.login(username="bob", password="pass12345")
+        response = self.client.post(self.url, data={"foto": _valid_image_file()})
+        self.assertEqual(response.status_code, 404)
+
+    def test_happy_path_creates_photo_and_returns_id_and_url(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(self.url, data={"foto": _valid_image_file()})
+        self.assertEqual(response.status_code, 200)
+        foto = self.cat.fotos.get()
+        body = response.json()
+        self.assertEqual(body["id"], foto.id)
+        self.assertEqual(body["url"], foto.imagen.url)
+
+    def test_continues_orden_from_existing_max(self):
+        CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=0)
+        self.client.login(username="alice", password="pass12345")
+        self.client.post(self.url, data={"foto": _valid_image_file("b.png")})
+        fotos = list(self.cat.fotos.all())
+        self.assertEqual([f.orden for f in fotos], [0, 1])
+
+    def test_rejects_disallowed_content_type(self):
+        self.client.login(username="alice", password="pass12345")
+        bad = SimpleUploadedFile("bad.gif", _PNG_1PX, content_type="image/gif")
+        response = self.client.post(self.url, data={"foto": bad})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.cat.fotos.count(), 0)
+
+    def test_rejects_oversized_file(self):
+        self.client.login(username="alice", password="pass12345")
+        big = SimpleUploadedFile("big.png", b"x" * (6 * 1024 * 1024), content_type="image/png")
+        response = self.client.post(self.url, data={"foto": big})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.cat.fotos.count(), 0)
+
+    def test_enforces_six_photo_cap(self):
+        for i in range(6):
+            CatPhoto.objects.create(gato=self.cat, imagen=_valid_image_file(), orden=i)
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(self.url, data={"foto": _valid_image_file("x.png")})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.cat.fotos.count(), 6)
+
+    def test_missing_file_returns_400(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.post(self.url, data={})
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_not_allowed(self):
+        self.client.login(username="alice", password="pass12345")
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 405)
 
 

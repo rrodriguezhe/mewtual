@@ -64,7 +64,6 @@
         <!-- ── Galería de fotos ── -->
         <div class="mb-4">
             <p class="text-sm font-semibold text-gray-600 mb-2">Fotos del gato</p>
-            {% if fotos %}
             <div id="photo-gallery" class="grid grid-cols-3 gap-2 select-none">
                 {% for foto in fotos %}
                 <div class="photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing {% if forloop.first %}ring-2 ring-brandOrange{% endif %}"
@@ -89,26 +88,22 @@
                     </form>
                 </div>
                 {% endfor %}
+                <label for="fotos-input"
+                       id="add-photo-tile"
+                       class="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 cursor-pointer hover:border-brandOrange hover:text-brandOrange hover:bg-orange-50 transition select-none {% if fotos|length >= max_fotos %}hidden{% endif %}">
+                    <span class="text-2xl leading-none">📷</span>
+                    <span class="text-[10px] font-medium">Agregar</span>
+                </label>
+                <input type="file" id="fotos-input" name="fotos" form="editar-form"
+                       accept="image/jpeg,image/png,image/webp" multiple class="hidden">
             </div>
-            <p class="text-xs text-gray-400 mt-2">La primera foto es la que verán los demás. Arrástrala para cambiar el orden.</p>
-            {% else %}
-            <p class="text-xs text-gray-400">Este gato aún no tiene fotos.</p>
-            {% endif %}
+            <p id="upload-error" class="text-xs text-red-500 mt-2 hidden"></p>
+            <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB cada una · Máx 6 fotos en total</p>
+            <p class="text-xs text-gray-400">La primera foto es la que verán los demás. Arrástrala para cambiar el orden.</p>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
+        <form id="editar-form" method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
             {% csrf_token %}
-
-            <!-- ── Agregar más fotos ── -->
-            <div class="text-center mb-2">
-                <label for="fotos-input"
-                       class="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-full shadow-sm cursor-pointer hover:border-brandOrange transition">
-                    📸 Agregar fotos
-                </label>
-                <input type="file" id="fotos-input" name="fotos" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
-                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB cada una · Máx 6 fotos en total</p>
-                <div id="fotos-preview" class="flex flex-wrap gap-2 mt-2 justify-center"></div>
-            </div>
 
             <!-- ── Nombre ── -->
             <div>
@@ -397,33 +392,69 @@
     </div>
 
     <script>
-        // ── Vista previa de fotos nuevas ──
-        const fotosInput = document.getElementById('fotos-input');
-        const fotosPreview = document.getElementById('fotos-preview');
-        if (fotosInput) {
-            fotosInput.addEventListener('change', function () {
-                fotosPreview.innerHTML = '';
-                Array.from(this.files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = 'w-14 h-14 rounded-lg object-cover border-2 border-white shadow-sm';
-                        fotosPreview.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            });
-        }
-
-        // ── Arrastrar y soltar para reordenar la galería (SortableJS) ──
+        // ── Galería de fotos: subida inmediata + arrastrar y soltar (SortableJS) ──
         (function () {
             const gallery = document.getElementById('photo-gallery');
             if (!gallery) return;
 
+            const addTile = document.getElementById('add-photo-tile');
+            const fotosInput = document.getElementById('fotos-input');
+            const uploadError = document.getElementById('upload-error');
             const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
             const csrfToken = csrfInput ? csrfInput.value : '';
             const catId = {{ gato.id }};
+            const maxFotos = {{ max_fotos }};
+
+            // Construye un tile idéntico al que renderiza el servidor, para que
+            // una foto recién subida sea arrastrable/eliminable de inmediato.
+            function buildPhotoTile(id, url) {
+                const thumb = document.createElement('div');
+                thumb.className = 'photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing';
+                thumb.dataset.photoId = id;
+                thumb.style.touchAction = 'none';
+
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = '';
+                img.className = 'w-full h-full object-cover pointer-events-none';
+                img.draggable = false;
+                thumb.appendChild(img);
+
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle absolute top-1 left-1 bg-white/90 backdrop-blur-sm text-gray-500 text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-sm pointer-events-none';
+                handle.title = 'Arrastrar para reordenar';
+                handle.textContent = '⠿';
+                thumb.appendChild(handle);
+
+                const badge = document.createElement('span');
+                badge.className = 'featured-badge absolute bottom-1 left-1 bg-white/90 backdrop-blur-sm text-brandOrange font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-sm hidden';
+                badge.textContent = '⭐ Principal';
+                thumb.appendChild(badge);
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/cats/foto/${id}/eliminar/`;
+                form.className = 'contents';
+
+                const csrfHidden = document.createElement('input');
+                csrfHidden.type = 'hidden';
+                csrfHidden.name = 'csrfmiddlewaretoken';
+                csrfHidden.value = csrfToken;
+                form.appendChild(csrfHidden);
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'submit';
+                delBtn.className = 'absolute top-1 right-1 bg-white/90 backdrop-blur-sm text-gray-500 hover:text-red-500 w-6 h-6 rounded-full flex items-center justify-center shadow-sm text-xs';
+                delBtn.title = 'Eliminar foto';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', function (e) {
+                    if (!confirm('¿Eliminar esta foto?')) e.preventDefault();
+                });
+                form.appendChild(delBtn);
+
+                thumb.appendChild(form);
+                return thumb;
+            }
 
             function getThumbs() {
                 return Array.from(gallery.querySelectorAll('.photo-thumb'));
@@ -454,9 +485,55 @@
                 });
             }
 
+            // Cada foto seleccionada se sube de inmediato (una a la vez, para que
+            // el orden y el límite de 6 fotos se validen contra el estado real en
+            // el servidor y no contra una foto de otra subida aún en vuelo). Si
+            // sube bien, se inserta ya como tile normal — arrastrable y eliminable —
+            // justo antes del tile "Agregar".
+            if (fotosInput && addTile) {
+                fotosInput.addEventListener('change', async function () {
+                    const files = Array.from(this.files);
+                    this.value = '';
+                    if (uploadError) {
+                        uploadError.classList.add('hidden');
+                        uploadError.textContent = '';
+                    }
+
+                    for (const file of files) {
+                        const formData = new FormData();
+                        formData.append('foto', file);
+                        try {
+                            const response = await fetch(`/cats/${catId}/fotos/subir/`, {
+                                method: 'POST',
+                                headers: { 'X-CSRFToken': csrfToken },
+                                body: formData,
+                            });
+                            const body = await response.json();
+                            if (!response.ok) {
+                                if (uploadError) {
+                                    uploadError.textContent = body.error || 'No se pudo subir la foto.';
+                                    uploadError.classList.remove('hidden');
+                                }
+                                continue;
+                            }
+                            gallery.insertBefore(buildPhotoTile(body.id, body.url), addTile);
+                            updateFeaturedUI();
+                            if (addTile && getThumbs().length >= maxFotos) {
+                                addTile.classList.add('hidden');
+                            }
+                        } catch (err) {
+                            if (uploadError) {
+                                uploadError.textContent = 'No se pudo subir la foto. Intenta de nuevo.';
+                                uploadError.classList.remove('hidden');
+                            }
+                        }
+                    }
+                });
+            }
+
             Sortable.create(gallery, {
                 animation: 150,
-                filter: 'form',
+                filter: 'form, #add-photo-tile',
                 preventOnFilter: false,
                 forceFallback: true,
                 ghostClass: 'sortable-ghost',
@@ -464,6 +541,7 @@
                 dragClass: 'sortable-chosen',
                 fallbackClass: 'sortable-chosen',
                 onEnd: function () {
+                    if (addTile) gallery.appendChild(addTile);
                     updateFeaturedUI();
                     persistOrder();
                 },

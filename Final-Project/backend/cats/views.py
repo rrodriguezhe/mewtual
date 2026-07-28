@@ -227,6 +227,7 @@ def editar_perfil(request, cat_id):
         "vacunas": vacunas,
         "registros_medicos": registros_medicos,
         "fotos": gato.fotos.all(),
+        "max_fotos": MAX_FOTOS_POR_GATO,
         "cruce": puede_cruce_responsable(gato),
         "edad": calcular_edad(gato.fecha_nacimiento),
         "vacunado": vacunas_vigentes(gato),
@@ -287,6 +288,34 @@ def eliminar_foto(request, foto_id):
 
     messages.success(request, "Foto eliminada.")
     return redirect("cats:editar_perfil", cat_id=gato.pk)
+
+
+@login_required
+@require_POST
+def subir_foto(request, cat_id):
+    """Sube una foto a la galería de un gato propio del usuario (AJAX)."""
+    gato = get_object_or_404(Cat, pk=cat_id, owner=request.user)
+
+    foto = request.FILES.get("foto")
+    if foto is None:
+        return JsonResponse({"error": "No se recibió ningún archivo."}, status=400)
+
+    if gato.fotos.count() >= MAX_FOTOS_POR_GATO:
+        return JsonResponse(
+            {"error": f"Un gato puede tener máximo {MAX_FOTOS_POR_GATO} fotos."},
+            status=400,
+        )
+
+    try:
+        validate_image_file(foto)
+    except ValidationError as e:
+        return JsonResponse({"error": e.message}, status=400)
+
+    max_orden = gato.fotos.aggregate(Max("orden"))["orden__max"]
+    siguiente_orden = 0 if max_orden is None else max_orden + 1
+    nueva_foto = CatPhoto.objects.create(gato=gato, imagen=foto, orden=siguiente_orden)
+
+    return JsonResponse({"id": nueva_foto.id, "url": nueva_foto.imagen.url})
 
 
 @login_required
