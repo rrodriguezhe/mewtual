@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mewtual - Editar {{ gato.nombre }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -19,6 +20,17 @@
             }
         }
     </script>
+    <style>
+        /* SortableJS applies these via classList.add(), which rejects a
+           space-separated string of Tailwind utilities as a single token —
+           so the drag visuals need real class names backed by plain CSS. */
+        .sortable-ghost { opacity: 0.3; }
+        .sortable-chosen {
+            opacity: 0.8;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body class="bg-gray-100 flex justify-center items-center min-h-screen">
     <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-10">
@@ -53,13 +65,13 @@
         <div class="mb-4">
             <p class="text-sm font-semibold text-gray-600 mb-2">Fotos del gato</p>
             {% if fotos %}
-            <div id="photo-gallery" class="grid grid-cols-3 gap-2">
+            <div id="photo-gallery" class="grid grid-cols-3 gap-2 select-none">
                 {% for foto in fotos %}
-                <div class="photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 {% if forloop.first %}ring-2 ring-brandOrange{% endif %}"
-                     data-photo-id="{{ foto.id }}">
+                <div class="photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing {% if forloop.first %}ring-2 ring-brandOrange{% endif %}"
+                     data-photo-id="{{ foto.id }}"
+                     style="touch-action: none;">
                     <img src="{{ foto.imagen.url }}" alt="" class="w-full h-full object-cover pointer-events-none" draggable="false">
-                    <div class="drag-handle absolute top-1 left-1 bg-white/90 backdrop-blur-sm text-gray-500 text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-sm cursor-grab active:cursor-grabbing"
-                         style="touch-action: none;"
+                    <div class="drag-handle absolute top-1 left-1 bg-white/90 backdrop-blur-sm text-gray-500 text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-sm pointer-events-none"
                          title="Arrastrar para reordenar">
                         ⠿
                     </div>
@@ -404,7 +416,7 @@
             });
         }
 
-        // ── Arrastrar y soltar para reordenar la galería ──
+        // ── Arrastrar y soltar para reordenar la galería (SortableJS) ──
         (function () {
             const gallery = document.getElementById('photo-gallery');
             if (!gallery) return;
@@ -412,11 +424,6 @@
             const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
             const csrfToken = csrfInput ? csrfInput.value : '';
             const catId = {{ gato.id }};
-
-            let dragEl = null;
-            let pointerId = null;
-            let offsetX = 0, offsetY = 0;
-            let dragging = false;
 
             function getThumbs() {
                 return Array.from(gallery.querySelectorAll('.photo-thumb'));
@@ -447,78 +454,19 @@
                 });
             }
 
-            function finishDrag(e) {
-                if (!dragging || e.pointerId !== pointerId) return;
-                dragging = false;
-                e.target.releasePointerCapture(pointerId);
-                dragEl.style.position = '';
-                dragEl.style.left = '';
-                dragEl.style.top = '';
-                dragEl.style.width = '';
-                dragEl.style.height = '';
-                dragEl.style.zIndex = '';
-                dragEl.style.pointerEvents = '';
-                dragEl.classList.remove('opacity-80', 'scale-105', 'shadow-lg');
-                updateFeaturedUI();
-                persistOrder();
-                dragEl = null;
-            }
-
-            getThumbs().forEach(thumb => {
-                const handle = thumb.querySelector('.drag-handle');
-                if (!handle) return;
-
-                handle.addEventListener('pointerdown', function (e) {
-                    if (e.button !== undefined && e.button !== 0) return;
-                    dragEl = thumb;
-                    pointerId = e.pointerId;
-                    dragging = true;
-                    const rect = thumb.getBoundingClientRect();
-                    offsetX = e.clientX - rect.left;
-                    offsetY = e.clientY - rect.top;
-
-                    thumb.style.position = 'fixed';
-                    thumb.style.left = rect.left + 'px';
-                    thumb.style.top = rect.top + 'px';
-                    thumb.style.width = rect.width + 'px';
-                    thumb.style.height = rect.height + 'px';
-                    thumb.style.zIndex = '50';
-                    thumb.classList.add('opacity-80', 'scale-105', 'shadow-lg');
-
-                    handle.setPointerCapture(pointerId);
-                });
-
-                handle.addEventListener('pointermove', function (e) {
-                    if (!dragging || e.pointerId !== pointerId) return;
-                    dragEl.style.left = (e.clientX - offsetX) + 'px';
-                    dragEl.style.top = (e.clientY - offsetY) + 'px';
-
-                    const others = getThumbs().filter(t => t !== dragEl);
-                    for (const other of others) {
-                        const rect = other.getBoundingClientRect();
-                        // Shrink the hit box to the center 60% of the cell so a swap only
-                        // fires once the pointer clearly enters a neighbor, not just grazes
-                        // its edge. Without this, swapping reflows the grid under the
-                        // cursor, which re-triggers the same overlap test on the very next
-                        // pointermove tick and flips the swap back and forth every frame.
-                        const marginX = rect.width * 0.2;
-                        const marginY = rect.height * 0.2;
-                        const overX = e.clientX >= rect.left + marginX && e.clientX <= rect.right - marginX;
-                        const overY = e.clientY >= rect.top + marginY && e.clientY <= rect.bottom - marginY;
-                        if (overX && overY) {
-                            if (dragEl.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) {
-                                gallery.insertBefore(dragEl, other.nextSibling);
-                            } else {
-                                gallery.insertBefore(dragEl, other);
-                            }
-                            updateFeaturedUI();
-                            break;
-                        }
-                    }
-                });
-
-                handle.addEventListener('pointerup', finishDrag);
-                handle.addEventListener('pointercancel', finishDrag);
+            Sortable.create(gallery, {
+                animation: 150,
+                filter: 'form',
+                preventOnFilter: false,
+                forceFallback: true,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-chosen',
+                fallbackClass: 'sortable-chosen',
+                onEnd: function () {
+                    updateFeaturedUI();
+                    persistOrder();
+                },
             });
 
             updateFeaturedUI();
