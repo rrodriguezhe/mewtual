@@ -72,23 +72,7 @@
             {% endif %}
         </div>
 
-        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 flex justify-around items-center shadow-lg rounded-t-2xl">
-            <a href="{% url 'matching:swipe' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Match</span>
-            </a>
-            <a href="{% url 'adoption:lista_publicaciones' %}" class="flex flex-col items-center text-brandOrange">
-                <span class="text-xs font-medium">Adopción</span>
-            </a>
-            <a href="{% url 'chat:lista_chats' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Chats</span>
-            </a>
-            <a href="{% url 'cats:mis_gatos' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Mis Gatos</span>
-            </a>
-            <a href="{% url 'users:mi_cuenta' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Mi cuenta</span>
-            </a>
-        </div>
+        {% include "partials/bottom_nav.html" with active_tab="adopcion" %}
 
     </div>
 </body>
