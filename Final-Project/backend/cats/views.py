@@ -102,6 +102,7 @@ def ver_perfil(request, cat_id):
 
     return render(request, "cats/ver_perfil.html", {
         "gato": gato,
+        "fotos": gato.fotos.all(),
         "edad": edad,
         "es_owner": es_owner,
         "gato_activo": gato_activo,
