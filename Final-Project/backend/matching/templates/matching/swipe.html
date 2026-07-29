@@ -34,14 +34,14 @@
         {% endif %}
 
         {% if candidato %}
-        <div id="swipe-card" class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden flex flex-col relative mb-4" style="touch-action: none;">
+        <div id="swipe-card" class="flex-1 bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden flex flex-col relative mb-4 select-none" style="touch-action: none;">
 
             <div class="relative w-full aspect-[3/4] bg-gray-200">
                 <a href="{% url 'cats:ver_perfil' candidato.id %}?gato_activo={{ gato_activo.id }}" class="block w-full h-full">
                     {% if candidato.foto_principal %}
-                    <img src="{{ candidato.foto_principal.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover">
+                    <img src="{{ candidato.foto_principal.url }}" alt="{{ candidato.nombre }}" class="w-full h-full object-cover" draggable="false" style="-webkit-user-drag: none;">
                     {% else %}
-                    <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">🐱</div>
+                    <div class="w-full h-full flex items-center justify-center bg-gray-100 text-6xl select-none">🐱</div>
                     {% endif %}
                 </a>
 
@@ -159,6 +159,10 @@
                     form.requestSubmit();
                 }, FLY_OUT_MS);
             }
+
+            card.addEventListener('dragstart', function (e) {
+                e.preventDefault();
+            });
 
             card.addEventListener('pointerdown', function (e) {
                 if (state === 'animating') return;
