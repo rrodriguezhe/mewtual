@@ -10,37 +10,30 @@ from chat.models import Chat, Message
 from matching.models import Match
 from users.models import Profile
 
-DEMO_PASSWORD = "Demo1234!"
+DEMO_PASSWORD = "mewtual"
 
 USERS = [
     {"username": "demo_carlos", "email": "carlos@example.com"},
     {"username": "demo_laura", "email": "laura@example.com"},
     {"username": "demo_andres", "email": "andres@example.com"},
     {"username": "demo_maria", "email": "maria@example.com"},
-    {"username": "demo_diego", "email": "diego@example.com"},
-    {"username": "demo_valentina", "email": "valentina@example.com"},
-    {"username": "demo_santiago", "email": "santiago@example.com"},
-    {"username": "demo_camila", "email": "camila@example.com"},
-    {"username": "demo_mateo", "email": "mateo@example.com"},
-    {"username": "demo_sofia", "email": "sofia@example.com"},
-    {"username": "demo_juan", "email": "juan@example.com"},
 ]
 
 CATS = [
     {"owner": "demo_carlos", "nombre": "Simba", "sexo": "M", "raza": "Persa", "color": "Naranja", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_carlos", "nombre": "Coco", "sexo": "F", "raza": "Siames", "color": "Crema", "edad_anios": 2, "peso": 3.6},
+    {"owner": "demo_carlos", "nombre": "Leo", "sexo": "M", "raza": "Criollo", "color": "Naranja", "edad_anios": 5, "peso": 5.4},
     {"owner": "demo_laura", "nombre": "Luna", "sexo": "F", "raza": "Siames", "color": "Crema", "edad_anios": 2, "peso": 4.2},
-    {"owner": "demo_andres", "nombre": "Milo", "sexo": "M", "raza": "Bengala", "color": "Atigrado", "edad_anios": 2, "peso": 4.2},
-    {"owner": "demo_maria", "nombre": "Nala", "sexo": "F", "raza": "Angora", "color": "Blanco", "edad_anios": 2, "peso": 4.2},
-    {"owner": "demo_diego", "nombre": "Rocco", "sexo": "M", "raza": "Maine Coon", "color": "Gris", "edad_anios": 3, "peso": 6.5},
-    {"owner": "demo_diego", "nombre": "Bigotes", "sexo": "M", "raza": "Criollo", "color": "Negro", "edad_anios": 1, "peso": 3.5},
-    {"owner": "demo_valentina", "nombre": "Mia", "sexo": "F", "raza": "Persa", "color": "Blanco", "edad_anios": 4, "peso": 3.8},
-    {"owner": "demo_valentina", "nombre": "Coco", "sexo": "F", "raza": "Siames", "color": "Crema", "edad_anios": 2, "peso": 3.6},
-    {"owner": "demo_santiago", "nombre": "Toby", "sexo": "M", "raza": "Bengala", "color": "Dorado", "edad_anios": 3, "peso": 5.0},
-    {"owner": "demo_camila", "nombre": "Frida", "sexo": "F", "raza": "Angora", "color": "Blanco y Negro", "edad_anios": 1, "peso": 3.2},
-    {"owner": "demo_mateo", "nombre": "Leo", "sexo": "M", "raza": "Criollo", "color": "Naranja", "edad_anios": 5, "peso": 5.4},
-    {"owner": "demo_sofia", "nombre": "Estrella", "sexo": "F", "raza": "Ragdoll", "color": "Blanco", "edad_anios": 2, "peso": 4.0},
-    {"owner": "demo_juan", "nombre": "Zeus", "sexo": "M", "raza": "Maine Coon", "color": "Gris y Blanco", "edad_anios": 4, "peso": 7.0},
-    {"owner": "demo_juan", "nombre": "Michi", "sexo": "M", "raza": "Criollo", "color": "Atigrado", "edad_anios": 1, "peso": 3.3},
+    {"owner": "demo_laura", "nombre": "Milo", "sexo": "M", "raza": "Bengala", "color": "Atigrado", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_laura", "nombre": "Estrella", "sexo": "F", "raza": "Ragdoll", "color": "Blanco", "edad_anios": 2, "peso": 4.0},
+    {"owner": "demo_andres", "nombre": "Rocco", "sexo": "M", "raza": "Maine Coon", "color": "Gris", "edad_anios": 3, "peso": 6.5},
+    {"owner": "demo_andres", "nombre": "Nala", "sexo": "F", "raza": "Angora", "color": "Blanco", "edad_anios": 2, "peso": 4.2},
+    {"owner": "demo_andres", "nombre": "Bigotes", "sexo": "M", "raza": "Criollo", "color": "Negro", "edad_anios": 1, "peso": 3.5},
+    {"owner": "demo_andres", "nombre": "Toby", "sexo": "M", "raza": "Bengala", "color": "Dorado", "edad_anios": 3, "peso": 5.0},
+    {"owner": "demo_maria", "nombre": "Mia", "sexo": "F", "raza": "Persa", "color": "Blanco", "edad_anios": 4, "peso": 3.8},
+    {"owner": "demo_maria", "nombre": "Frida", "sexo": "F", "raza": "Angora", "color": "Blanco y Negro", "edad_anios": 1, "peso": 3.2},
+    {"owner": "demo_maria", "nombre": "Zeus", "sexo": "M", "raza": "Maine Coon", "color": "Gris y Blanco", "edad_anios": 4, "peso": 7.0},
+    {"owner": "demo_maria", "nombre": "Michi", "sexo": "M", "raza": "Criollo", "color": "Atigrado", "edad_anios": 1, "peso": 3.3},
 ]
 
 
@@ -144,5 +137,5 @@ class Command(BaseCommand):
                 contenido="Hola Carlos! Claro, cuéntame mas sobre Simba.",
             )
 
-        # Milo (demo_andres) and Nala (demo_maria) are left unmatched on purpose
-        # so both accounts have a live candidate to swipe on in matching:swipe.
+        # Every other cat is left unmatched on purpose, so each of the 4 demo
+        # accounts still has a live candidate to swipe on in matching:swipe.

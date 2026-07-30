@@ -28,8 +28,8 @@
         </div>
 
         <div class="flex flex-col items-center text-center py-8">
-            {% if gato.foto %}
-            <img src="{{ gato.foto.url }}" alt="{{ gato.nombre }}"
+            {% if gato.foto_principal %}
+            <img src="{{ gato.foto_principal.url }}" alt="{{ gato.nombre }}"
                  class="w-24 h-24 rounded-full object-cover border-4 border-red-100 mb-4">
             {% else %}
             <div class="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center text-4xl mb-4">🐱</div>

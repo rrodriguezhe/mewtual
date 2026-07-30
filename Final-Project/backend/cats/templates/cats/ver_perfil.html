@@ -8,6 +8,12 @@
     <script>
         tailwind.config = { theme: { extend: { colors: { brandOrange: '#F59E0B', brandCrema: '#FEFBF6', brandGreen: '#10B981' } } } }
     </script>
+    <style>
+        /* The Tailwind CDN build has no scrollbar-hide plugin, so the gallery's
+           native scrollbar is hidden with plain CSS instead. */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-gray-100 flex justify-center items-center min-h-screen">
     <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-10">
@@ -29,11 +35,22 @@
         </div>
         {% endif %}
 
-        <div class="w-full h-64 rounded-3xl bg-gray-200 overflow-hidden mb-4 shadow-sm">
-            {% if gato.foto %}
-            <img src="{{ gato.foto.url }}" alt="{{ gato.nombre }}" class="w-full h-full object-cover">
+        <div class="mb-4">
+            {% if fotos %}
+            <div id="foto-gallery" class="w-full aspect-[3/4] rounded-3xl bg-gray-200 overflow-hidden overflow-x-auto shadow-sm flex snap-x snap-mandatory no-scrollbar select-none">
+                {% for foto in fotos %}
+                <img src="{{ foto.imagen.url }}" alt="{{ gato.nombre }}" class="w-full aspect-[3/4] object-cover shrink-0 snap-start" draggable="false" style="-webkit-user-drag: none;">
+                {% endfor %}
+            </div>
+            {% if fotos|length > 1 %}
+            <div id="foto-dots" class="flex justify-center gap-1.5 mt-2">
+                {% for foto in fotos %}
+                <span class="foto-dot h-1.5 rounded-full transition-all duration-200 {% if forloop.first %}w-4 bg-brandOrange{% else %}w-1.5 bg-gray-300{% endif %}"></span>
+                {% endfor %}
+            </div>
+            {% endif %}
             {% else %}
-            <div class="w-full h-full flex items-center justify-center text-6xl">🐱</div>
+            <div class="w-full aspect-[3/4] rounded-3xl bg-gray-200 overflow-hidden shadow-sm flex items-center justify-center text-6xl">🐱</div>
             {% endif %}
         </div>
 
@@ -121,5 +138,89 @@
         </div>
 
     </div>
+
+    {% if fotos %}
+    <script>
+        (function () {
+            const gallery = document.getElementById('foto-gallery');
+            if (!gallery) return;
+
+            // Native scroll-snap containers don't scroll from mouse click-and-drag
+            // (only touch/trackpad), so this layer maps mouse drag onto scrollLeft.
+            // Once the mouse is released, native scroll-snap takes over and settles
+            // the container on the nearest photo — no manual snap math needed here.
+            const CLICK_THRESHOLD = 5;
+            let dragging = false;
+            let startX = 0;
+            let startScrollLeft = 0;
+            let moved = 0;
+
+            function startDrag(e) {
+                dragging = true;
+                startX = e.clientX;
+                startScrollLeft = gallery.scrollLeft;
+                moved = 0;
+            }
+
+            function dragMove(e) {
+                if (!dragging) return;
+                const delta = e.clientX - startX;
+                moved = Math.abs(delta);
+                gallery.scrollLeft = startScrollLeft - delta;
+            }
+
+            function endDrag() {
+                dragging = false;
+                // moved < CLICK_THRESHOLD would mark this as a plain click rather
+                // than a drag — nothing in the gallery is clickable yet, but this
+                // is kept so a future click handler on a photo/overlay can check
+                // it before acting.
+            }
+
+            gallery.addEventListener('mousedown', startDrag);
+            gallery.addEventListener('mousemove', dragMove);
+            gallery.addEventListener('mouseup', endDrag);
+            gallery.addEventListener('mouseleave', endDrag);
+
+            gallery.addEventListener('dragstart', function (e) {
+                e.preventDefault();
+            });
+        })();
+    </script>
+    {% endif %}
+
+    {% if fotos|length > 1 %}
+    <script>
+        (function () {
+            const gallery = document.getElementById('foto-gallery');
+            const dots = Array.from(document.querySelectorAll('#foto-dots .foto-dot'));
+            if (!gallery || dots.length === 0) return;
+
+            const photos = Array.from(gallery.querySelectorAll('img'));
+
+            function setActiveDot(index) {
+                dots.forEach((dot, i) => {
+                    if (i === index) {
+                        dot.classList.remove('w-1.5', 'bg-gray-300');
+                        dot.classList.add('w-4', 'bg-brandOrange');
+                    } else {
+                        dot.classList.remove('w-4', 'bg-brandOrange');
+                        dot.classList.add('w-1.5', 'bg-gray-300');
+                    }
+                });
+            }
+
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                        setActiveDot(photos.indexOf(entry.target));
+                    }
+                });
+            }, { root: gallery, threshold: 0.5 });
+
+            photos.forEach(photo => observer.observe(photo));
+        })();
+    </script>
+    {% endif %}
 </body>
 </html>

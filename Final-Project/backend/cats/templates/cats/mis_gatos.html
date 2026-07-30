@@ -59,8 +59,8 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                     <a href="{% url 'cats:ver_perfil' item.obj.pk %}" class="flex items-center space-x-4">
                         <!-- Foto -->
-                        {% if item.obj.foto %}
-                        <img src="{{ item.obj.foto.url }}"
+                        {% if item.obj.foto_principal %}
+                        <img src="{{ item.obj.foto_principal.url }}"
                              alt="Foto de {{ item.obj.nombre }}"
                              class="w-16 h-16 rounded-full object-cover border-2
                              {% if item.vacunado %}border-brandOrange{% else %}border-gray-200{% endif %}">
@@ -129,24 +129,7 @@
 
         </div>
 
-        <!-- Barra de navegación -->
-        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 flex justify-around items-center shadow-lg rounded-t-2xl">
-            <a href="{% url 'matching:swipe' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Match</span>
-            </a>
-            <a href="{% url 'adoption:lista_publicaciones' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Adopción</span>
-            </a>
-            <a href="{% url 'chat:lista_chats' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Chats</span>
-            </a>
-            <a href="{% url 'cats:mis_gatos' %}" class="flex flex-col items-center text-brandOrange">
-                <span class="text-xs font-medium">Mis Gatos</span>
-            </a>
-            <a href="{% url 'users:mi_cuenta' %}" class="flex flex-col items-center text-gray-400 hover:text-brandOrange">
-                <span class="text-xs font-medium">Mi cuenta</span>
-            </a>
-        </div>
+        {% include "partials/bottom_nav.html" with active_tab="gatos" %}
 
     </div>
 </body>

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mewtual - Editar {{ gato.nombre }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -19,6 +20,17 @@
             }
         }
     </script>
+    <style>
+        /* SortableJS applies these via classList.add(), which rejects a
+           space-separated string of Tailwind utilities as a single token —
+           so the drag visuals need real class names backed by plain CSS. */
+        .sortable-ghost { opacity: 0.3; }
+        .sortable-chosen {
+            opacity: 0.8;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body class="bg-gray-100 flex justify-center items-center min-h-screen">
     <div class="w-full max-w-md bg-brandCrema min-h-screen shadow-lg flex flex-col p-6 relative pb-10">
@@ -49,30 +61,49 @@
         </div>
         {% endif %}
 
-        <form method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
-            {% csrf_token %}
-
-            <!-- ── Foto ── -->
-            <div class="text-center mb-2 relative">
-                <div class="w-28 h-28 rounded-full bg-gray-200 mx-auto overflow-hidden border-4 border-white shadow-sm">
-                    {% if gato.foto %}
-                    <img id="foto-preview" src="{{ gato.foto.url }}" alt="Foto de {{ gato.nombre }}" class="w-full h-full object-cover">
-                    {% else %}
-                    <img id="foto-preview" src="" alt="" class="w-full h-full object-cover hidden">
-                    <div id="foto-placeholder" class="w-full h-full flex items-center justify-center text-4xl">🐱</div>
-                    {% endif %}
+        <!-- ── Galería de fotos ── -->
+        <div class="mb-4">
+            <p class="text-sm font-semibold text-gray-600 mb-2">Fotos del gato</p>
+            <div id="photo-gallery" class="grid grid-cols-3 gap-2 select-none">
+                {% for foto in fotos %}
+                <div class="photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing {% if forloop.first %}ring-2 ring-brandOrange{% endif %}"
+                     data-photo-id="{{ foto.id }}"
+                     style="touch-action: none;">
+                    <img src="{{ foto.imagen.url }}" alt="" class="w-full h-full object-cover pointer-events-none" draggable="false">
+                    <div class="drag-handle absolute top-1 left-1 bg-white/90 backdrop-blur-sm text-gray-500 text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-sm pointer-events-none"
+                         title="Arrastrar para reordenar">
+                        ⠿
+                    </div>
+                    <span class="featured-badge absolute bottom-1 left-1 bg-white/90 backdrop-blur-sm text-brandOrange font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-sm {% if not forloop.first %}hidden{% endif %}">
+                        ⭐ Principal
+                    </span>
+                    <form method="POST" action="{% url 'cats:eliminar_foto' foto.id %}" class="contents">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="absolute top-1 right-1 bg-white/90 backdrop-blur-sm text-gray-500 hover:text-red-500 w-6 h-6 rounded-full flex items-center justify-center shadow-sm text-xs"
+                                onclick="return confirm('¿Eliminar esta foto?')"
+                                title="Eliminar foto">
+                            ✕
+                        </button>
+                    </form>
                 </div>
-                <label for="{{ form.foto.id_for_label }}"
-                       class="absolute bottom-0 right-[38%] bg-brandOrange p-2 rounded-full text-white shadow-md hover:scale-105 transition cursor-pointer"
-                       title="Cambiar foto">
-                    📸
+                {% endfor %}
+                <label for="fotos-input"
+                       id="add-photo-tile"
+                       class="relative aspect-square rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 cursor-pointer hover:border-brandOrange hover:text-brandOrange hover:bg-orange-50 transition select-none {% if fotos|length >= max_fotos %}hidden{% endif %}">
+                    <span class="text-2xl leading-none">📷</span>
+                    <span class="text-[10px] font-medium">Agregar</span>
                 </label>
-                <div class="hidden">{{ form.foto }}</div>
-                <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB</p>
-                {% if form.foto.errors %}
-                <p class="text-xs text-red-500 mt-1">{{ form.foto.errors.0 }}</p>
-                {% endif %}
+                <input type="file" id="fotos-input" name="fotos" form="editar-form"
+                       accept="image/jpeg,image/png,image/webp" multiple class="hidden">
             </div>
+            <p id="upload-error" class="text-xs text-red-500 mt-2 hidden"></p>
+            <p class="text-xs text-gray-400 mt-2">JPG, PNG o WEBP · Máx 5 MB cada una · Máx 6 fotos en total</p>
+            <p class="text-xs text-gray-400">La primera foto es la que verán los demás. Arrástrala para cambiar el orden.</p>
+        </div>
+
+        <form id="editar-form" method="POST" enctype="multipart/form-data" class="space-y-4 overflow-y-auto pr-1">
+            {% csrf_token %}
 
             <!-- ── Nombre ── -->
             <div>
@@ -361,23 +392,163 @@
     </div>
 
     <script>
-        // ── Vista previa de foto ──
-        const fotoInput = document.getElementById('{{ form.foto.id_for_label }}');
-        if (fotoInput) {
-            fotoInput.addEventListener('change', function () {
-                const file = this.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const preview = document.getElementById('foto-preview');
-                    const placeholder = document.getElementById('foto-placeholder');
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    if (placeholder) placeholder.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
+        // ── Galería de fotos: subida inmediata + arrastrar y soltar (SortableJS) ──
+        (function () {
+            const gallery = document.getElementById('photo-gallery');
+            if (!gallery) return;
+
+            const addTile = document.getElementById('add-photo-tile');
+            const fotosInput = document.getElementById('fotos-input');
+            const uploadError = document.getElementById('upload-error');
+            const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+            const csrfToken = csrfInput ? csrfInput.value : '';
+            const catId = {{ gato.id }};
+            const maxFotos = {{ max_fotos }};
+
+            // Construye un tile idéntico al que renderiza el servidor, para que
+            // una foto recién subida sea arrastrable/eliminable de inmediato.
+            function buildPhotoTile(id, url) {
+                const thumb = document.createElement('div');
+                thumb.className = 'photo-thumb relative aspect-square rounded-xl overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing';
+                thumb.dataset.photoId = id;
+                thumb.style.touchAction = 'none';
+
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = '';
+                img.className = 'w-full h-full object-cover pointer-events-none';
+                img.draggable = false;
+                thumb.appendChild(img);
+
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle absolute top-1 left-1 bg-white/90 backdrop-blur-sm text-gray-500 text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-sm pointer-events-none';
+                handle.title = 'Arrastrar para reordenar';
+                handle.textContent = '⠿';
+                thumb.appendChild(handle);
+
+                const badge = document.createElement('span');
+                badge.className = 'featured-badge absolute bottom-1 left-1 bg-white/90 backdrop-blur-sm text-brandOrange font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-sm hidden';
+                badge.textContent = '⭐ Principal';
+                thumb.appendChild(badge);
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/cats/foto/${id}/eliminar/`;
+                form.className = 'contents';
+
+                const csrfHidden = document.createElement('input');
+                csrfHidden.type = 'hidden';
+                csrfHidden.name = 'csrfmiddlewaretoken';
+                csrfHidden.value = csrfToken;
+                form.appendChild(csrfHidden);
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'submit';
+                delBtn.className = 'absolute top-1 right-1 bg-white/90 backdrop-blur-sm text-gray-500 hover:text-red-500 w-6 h-6 rounded-full flex items-center justify-center shadow-sm text-xs';
+                delBtn.title = 'Eliminar foto';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', function (e) {
+                    if (!confirm('¿Eliminar esta foto?')) e.preventDefault();
+                });
+                form.appendChild(delBtn);
+
+                thumb.appendChild(form);
+                return thumb;
+            }
+
+            function getThumbs() {
+                return Array.from(gallery.querySelectorAll('.photo-thumb'));
+            }
+
+            function updateFeaturedUI() {
+                getThumbs().forEach((thumb, index) => {
+                    const badge = thumb.querySelector('.featured-badge');
+                    if (index === 0) {
+                        thumb.classList.add('ring-2', 'ring-brandOrange');
+                        if (badge) badge.classList.remove('hidden');
+                    } else {
+                        thumb.classList.remove('ring-2', 'ring-brandOrange');
+                        if (badge) badge.classList.add('hidden');
+                    }
+                });
+            }
+
+            function persistOrder() {
+                const orden = getThumbs().map(t => parseInt(t.dataset.photoId, 10));
+                fetch(`/cats/${catId}/fotos/reordenar/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ orden: orden }),
+                });
+            }
+
+            // Cada foto seleccionada se sube de inmediato (una a la vez, para que
+            // el orden y el límite de 6 fotos se validen contra el estado real en
+            // el servidor y no contra una foto de otra subida aún en vuelo). Si
+            // sube bien, se inserta ya como tile normal — arrastrable y eliminable —
+            // justo antes del tile "Agregar".
+            if (fotosInput && addTile) {
+                fotosInput.addEventListener('change', async function () {
+                    const files = Array.from(this.files);
+                    this.value = '';
+                    if (uploadError) {
+                        uploadError.classList.add('hidden');
+                        uploadError.textContent = '';
+                    }
+
+                    for (const file of files) {
+                        const formData = new FormData();
+                        formData.append('foto', file);
+                        try {
+                            const response = await fetch(`/cats/${catId}/fotos/subir/`, {
+                                method: 'POST',
+                                headers: { 'X-CSRFToken': csrfToken },
+                                body: formData,
+                            });
+                            const body = await response.json();
+                            if (!response.ok) {
+                                if (uploadError) {
+                                    uploadError.textContent = body.error || 'No se pudo subir la foto.';
+                                    uploadError.classList.remove('hidden');
+                                }
+                                continue;
+                            }
+                            gallery.insertBefore(buildPhotoTile(body.id, body.url), addTile);
+                            updateFeaturedUI();
+                            if (addTile && getThumbs().length >= maxFotos) {
+                                addTile.classList.add('hidden');
+                            }
+                        } catch (err) {
+                            if (uploadError) {
+                                uploadError.textContent = 'No se pudo subir la foto. Intenta de nuevo.';
+                                uploadError.classList.remove('hidden');
+                            }
+                        }
+                    }
+                });
+            }
+
+            Sortable.create(gallery, {
+                animation: 150,
+                filter: 'form, #add-photo-tile',
+                preventOnFilter: false,
+                forceFallback: true,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-chosen',
+                fallbackClass: 'sortable-chosen',
+                onEnd: function () {
+                    if (addTile) gallery.appendChild(addTile);
+                    updateFeaturedUI();
+                    persistOrder();
+                },
             });
-        }
+
+            updateFeaturedUI();
+        })();
 
         // ── Selector de género tipo botón ──
         function actualizarEstiloSexo() {
